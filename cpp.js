@@ -44,7 +44,7 @@ define(function(require, exports, module) {
         plugin.on("load", function() {
             // Load our server side plugin
             ext.loadRemotePlugin("codecompletion_server", {
-                code: require("text!./server/codecompletion_server.js"),
+                code: require("text!./server/cpp_server.js"),
                 extendToken: false,
                 redefine: !server
             }, function(err, server_) {
