@@ -16,7 +16,6 @@ module.exports = function (vfs, options, register) {
             // register the completion library
             console.log("[cpp] Server loaded");
             ccomplete = new clang_autocomplete.lib();
-            ccomplete.arguments = new Array("-std=c++0x", "-I/usr/include", "-I/usr/local/include");
         },
 
         // Tries to complete the code at the given file position
@@ -30,6 +29,21 @@ module.exports = function (vfs, options, register) {
         diagnose: function(path, callback) {
             console.log("[cpp] Diagnose called");
             callback(0, ccomplete.Diagnose(path));
+        },
+
+        // Sets clang compiler arguments
+        set_args: function(args) {
+            ccomplete.arguments = args;
+        },
+
+        // Returns the current compiler arguments
+        get_args: function(args, callback) {
+            callback(0, ccomplete.arguments);
+        },
+
+        // Set cache timeout
+        set_expiration: function(args) {
+            ccomplete.expiration = parseInt(args);
         },
 
         // Should be called to clean up the memory of ccomplete
