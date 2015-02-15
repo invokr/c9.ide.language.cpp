@@ -43,20 +43,96 @@ define(function(require, exports, module) {
             // unregister this cb
             completer.sender.off("invokeCompletionReturn", invoTmp);
 
-            // get the results going
-            var results = [];
-            _.forEach(ev.data.results, function (res) {
-                var name = res.function[0];
-                res.function.splice(0, 1);
+            var results = []; // results to return
+            var line = doc.getLine(pos.row); // active line
 
+            _.forEach(ev.data.results, function(result) {
+                // variables used in the result
+                var r_name, r_meta, r_replace, r_doc = "";
+                var r_icon = null;
+                var r_priority = 1005;
+
+                switch(result.type) {
+                    // struct, class, union, enum, enum member
+                    case "enum_member":
+                    case "def":
+                        r_name = result.name;
+                        r_doc = result.description;
+                        r_replace = result.name;
+                        r_priority = 1004;
+                        r_icon = "package";
+                        break;
+
+                    // a single function, almost always emitted
+                    case "function":
+                        r_name = result.name;
+                        r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
+                        r_replace = result.name + "(";
+                        r_priority = 1001;
+                        r_icon = "method";
+                        break;
+
+                    // variable
+                    case "variable":
+                        r_name = result.name;
+                        r_doc = result.return + " " + result.name;
+                        r_replace = result.name;
+                        r_icon = "property";
+                        break;
+
+                    // type definition
+                    case "typedef":
+                        r_priority = 1004;
+                        r_name = result.name;
+                        r_meta = "typedef";
+                        r_replace = result.name;
+                        break;
+
+                    // class method
+                    case "method":
+                        r_name = result.name;
+                        r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
+                        r_replace = result.name + "(";
+                        r_icon = "method";
+                        break;
+
+                    // class attribute
+                    case "member":
+                        r_name = result.name;
+                        r_doc = result.return + " " + result.name;
+                        r_replace = result.name;
+                        r_icon = "property";
+                        break;
+
+                    // namespace
+                    case "namespace":
+                        r_name = result.name;
+                        r_meta = "namespace";
+                        r_replace = result.name + "::";
+                        break;
+
+                    // constructor
+                    case "constructor":
+                        r_name = result.name + "(" + result.params.join(", ") + ")";
+                        r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
+                        r_replace = result.name;
+                        r_icon = "package";
+                        break;
+
+                    // current argument in function
+                    case "current":
+                        r_priority = 1010;
+                        r_name = result.name;
+                        r_replace = result.name;
+                        r_meta = "param";
+                        break;
+                }
+
+                // add result to list
                 results.push({
-                    name: name,
-                    meta: res.return,
-                    replaceText: name,
-                    icon: null,
-                    priority: 999,
-                    doc: res.return + " " + name + "(" + res.function.join(", ") + ")"
-                });
+                    name: r_name, meta: r_meta, replaceText: r_replace,
+                    icon: r_icon, priority: r_priority, doc: r_doc
+                })
             });
 
             console.log("[cpp] Providing callback");
