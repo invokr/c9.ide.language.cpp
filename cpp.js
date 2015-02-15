@@ -27,18 +27,26 @@ define(function(require, exports, module) {
 
         // Worker / Server components
         var server = null;
-        var worker = null;
+        var worker_cc = null;
+        var worker_diag = null;
 
-        // Registeres our language handler
-        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker',
-            function(err, worker_) {
-                if (err) console.log(err);
+        // Registeres our language handlers
+        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
+            if (err) console.log(err);
 
-                // Set worker object and register callback's
-                worker = worker_;
-                worker.on("invokeCompletion", ccomplete);
-            }
-        );
+            // Set worker object and register callback's
+            worker_cc = worker_;
+            worker_cc.on("invokeCompletion", ccomplete);
+        });
+
+        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/diagnose_worker', function(err, worker_) {
+            if (err)
+                console.log(err);
+
+            // Set worker object and register callback's
+            worker_diag = worker_;
+            worker_diag.on("invokeDiagnose", diagnose);
+        });
 
         // Initialized the server side handler
         plugin.on("load", function() {
@@ -120,7 +128,8 @@ define(function(require, exports, module) {
             if (server) {
                 server.unload();
                 server = null;
-                worker = null;
+                worker_cc = null;
+                worker_diag = null;
             }
         });
 
@@ -151,9 +160,20 @@ define(function(require, exports, module) {
 
             save.save(tabManager.focussedTab, {}, function(err) {
                 server.complete(path, ev.data.pos.row+1, ev.data.pos.column+1, function(err, results) {
-                    worker.emit("invokeCompletionReturn", {
+                    worker_cc.emit("invokeCompletionReturn", {
                         data: { id: ev.data.id, results: results }
                     });
+                });
+            });
+        }
+
+        // Calls the diagnose function
+        function diagnose(ev) {
+            var path = basedir+tabManager.focussedTab.path;
+
+            server.diagnose(path, function(err, results) {
+                worker_diag.emit("diagnoseReturn", {
+                    data: { id: ev.data.id, results: results, path: path }
                 });
             });
         }
