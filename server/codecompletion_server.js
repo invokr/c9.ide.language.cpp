@@ -14,20 +14,17 @@ module.exports = function (vfs, options, register) {
         // Should be called when the server is first invoked, do not call multiple times
         load: function() {
             // register the completion library
-            console.log("[cpp] Server loaded");
             ccomplete = new clang_autocomplete.lib();
         },
 
         // Tries to complete the code at the given file position
         complete: function(path, row, col, callback) {
-            console.log("[cpp] Code complete called");
             var results = ccomplete.Complete(path, row, col);
             callback(0, results);
         },
 
         // Returns anything that clang's diagnostic feature emits
         diagnose: function(path, callback) {
-            console.log("[cpp] Diagnose called");
             callback(0, ccomplete.Diagnose(path));
         },
 

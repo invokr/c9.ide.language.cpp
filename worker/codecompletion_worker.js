@@ -18,8 +18,6 @@ define(function(require, exports, module) {
 
     // check if we handle the language
     completer.handlesLanguage = function(language) {
-        if (language === "c_cpp")
-            console.log("Handeling language");
         return language === "c_cpp";
     };
 
@@ -34,9 +32,7 @@ define(function(require, exports, module) {
         var cId = ++uId;
 
         // wait for the result and invoke the complete.callback function
-        console.log("[cpp worker] Waiting for completion");
         completer.sender.on("invokeCompletionReturn", function invoTmp(ev) {
-            console.log("[cpp] Received completion results", cId, ev);
             if (ev.data.id != cId)
                 return;
 
@@ -135,13 +131,11 @@ define(function(require, exports, module) {
                 })
             });
 
-            console.log("[cpp] Providing callback");
             callback(results);
         });
 
 
         // send the completion data to the server
-        console.log("[cpp worker] Sending request");
         completer.sender.emit("invokeCompletion", {
             pos: pos,
             id: cId

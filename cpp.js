@@ -9,11 +9,10 @@ define(function(require, exports, module) {
     ];
     main.provides = ["cpp"];
 
-    var _ = require("lodash");
-
     return main;
 
     function main(options, imports, register) {
+        var _ = require("lodash");
         var language = imports.language;
         var ext = imports.ext;
         var Plugin = imports.Plugin;
@@ -38,14 +37,11 @@ define(function(require, exports, module) {
                 // Set worker object and register callback's
                 worker = worker_;
                 worker.on("invokeCompletion", ccomplete);
-                console.log("[cpp] Worker registered");
             }
         );
 
         // Initialized the server side handler
         plugin.on("load", function() {
-            console.log("[cpp] Loading plugin");
-
             // Load our server side plugin
             ext.loadRemotePlugin("codecompletion_server", {
                 code: require("text!./server/codecompletion_server.js"),
@@ -55,7 +51,6 @@ define(function(require, exports, module) {
                 if (err)
                     console.log(err);
 
-                console.log("[cpp] Server registered");
                 server = server_;
                 server.load();
                 server.set_args(settings.get("project/c_cpp/@compilerArguments").split("\n"));
@@ -154,12 +149,8 @@ define(function(require, exports, module) {
         function ccomplete(ev) {
             var path = basedir+tabManager.focussedTab.path;
 
-            console.log("sending request", path, ev);
-            console.log(server);
-
             save.save(tabManager.focussedTab, {}, function(err) {
                 server.complete(path, ev.data.pos.row+1, ev.data.pos.column+1, function(err, results) {
-                    console.log("[cpp] Sending back result", ev);
                     worker.emit("invokeCompletionReturn", {
                         data: { id: ev.data.id, results: results }
                     });
