@@ -3,7 +3,10 @@
  * @license AGPLv3 <http://www.gnu.org/licenses/agpl.html>
  */
 define(function(require, exports, module) {
-    main.consumes = ["Plugin", "language", "ext", "tabManager", "c9", "save"];
+    main.consumes = [
+        "Plugin", "language", "ext", "tabManager", "c9", "save",
+        "settings", "preferences"
+    ];
     main.provides = ["cpp"];
 
     var _ = require("lodash");
@@ -17,6 +20,8 @@ define(function(require, exports, module) {
         var plugin = new Plugin("Robin Dietrich", main.consumes);
         var tabManager = imports.tabManager;
         var save = imports.save;
+        var settings = imports.settings;
+        var prefs = imports.preferences;
 
         // Use this to get the full file path for clang-autocomplete
         var basedir = imports.c9.workspaceDir;
@@ -53,7 +58,66 @@ define(function(require, exports, module) {
                 console.log("[cpp] Server registered");
                 server = server_;
                 server.load();
+                server.set_args(settings.get("project/c_cpp/@compilerArguments").split("\n"));
+                server.set_expiration(settings.get("project/c_cpp/@cacheTimeout"));
             });
+
+            // Read settings
+            settings.on("read", function(e) {
+                // project specific settings
+                settings.setDefaults("project/c_cpp/", [
+                    ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
+                ]);
+
+                // user settings
+                settings.setDefaults("user/c_cpp/", [
+                    ["cacheTimeout", "30"],
+                    ["clear", "true"]
+                ]);
+            }, plugin);
+
+            // Listen to updates
+            settings.on("project/c_cpp/@compilerArguments", function(value){
+                server.set_args(value.split("\n"));
+            }, plugin);
+
+            settings.on("project/c_cpp/@cacheTimeout", function(value){
+                server.set_expiration(value);
+            }, plugin);
+
+            // Project specific preferences
+            prefs.add({
+                "Project" : {
+                    "C / C++" : {
+                        position: 1000,
+                        "Compiler Arguments" : {
+                           type: "textarea",
+                           width: 150,
+                           height: 130,
+                           rowheight: 155,
+                           path: "project/c_cpp/@compilerArguments",
+                           position: 5000
+                        }
+                    }
+                }
+            }, plugin);
+
+            // User specific preferences
+            prefs.add({
+                "Language" : {
+                    position: 500,
+                    "C / C++" : {
+                        position: 100,
+                        "Cache Expiration Time" : {
+                            type: "spinner",
+                            path: "user/c_cpp/@cacheTimeout",
+                            position: 6000,
+                            min: "1",
+                            max: "120"
+                        }
+                    }
+                }
+            }, plugin);
         });
 
         // Make sure the plugin is unloaded so that cached translation units get purged
@@ -99,23 +163,6 @@ define(function(require, exports, module) {
                     worker.emit("invokeCompletionReturn", {
                         data: { id: ev.data.id, results: results }
                     });
-
-                    var res2 = [];
-                    _.forEach(results, function (res) {
-                        var name = res.function[0];
-                        res.function.splice(0, 1);
-
-                        res2.push({
-                            name: name,
-                            meta: res.return,
-                            replaceText: name,
-                            icon: null,
-                            priority: 999,
-                            doc: res.return + " " + name + "(" + res.function.join(", ") + ")"
-                        });
-                    });
-
-                    console.log("lodash: ", res2);
                 });
             });
         }
