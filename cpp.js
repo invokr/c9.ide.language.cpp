@@ -96,7 +96,7 @@ define(function(require, exports, module) {
                         position: 1000,
                         "Compiler Arguments" : {
                            type: "textarea",
-                           width: 150,
+                           width: 200,
                            height: 130,
                            rowheight: 155,
                            path: "project/c_cpp/@compilerArguments",
