@@ -5,7 +5,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Plugin", "language", "ext", "tabManager", "c9", "save",
-        "settings", "preferences"
+        "settings", "preferences", "fs"
     ];
     main.provides = ["cpp"];
 
@@ -21,6 +21,7 @@ define(function(require, exports, module) {
         var save = imports.save;
         var settings = imports.settings;
         var prefs = imports.preferences;
+        var fs = imports.fs;
 
         // Use this to get the full file path for clang-autocomplete
         var basedir = imports.c9.workspaceDir;
@@ -156,22 +157,25 @@ define(function(require, exports, module) {
 
         // Calls the code completion function
         function ccomplete(ev) {
+            // get value and original path
+            var value = tabManager.focussedTab.document.value;
             var path = basedir+tabManager.focussedTab.path;
 
-            save.save(tabManager.focussedTab, {}, function(err) {
-                server.complete(path, ev.data.pos.row+1, ev.data.pos.column+1, function(err, results) {
-                    worker_cc.emit("invokeCompletionReturn", {
-                        data: { id: ev.data.id, results: results }
-                    });
+            // do completion on the new file
+            server.complete(path, value, ev.data.pos.row+1, ev.data.pos.column+1, function(err, results) {
+                worker_cc.emit("invokeCompletionReturn", {
+                    data: { id: ev.data.id, results: results }
                 });
             });
         }
 
         // Calls the diagnose function
         function diagnose(ev) {
+            // get value and original path
+            var value = tabManager.focussedTab.document.value;
             var path = basedir+tabManager.focussedTab.path;
 
-            server.diagnose(path, function(err, results) {
+            server.diagnose(path, value, function(err, results) {
                 worker_diag.emit("diagnoseReturn", {
                     data: { id: ev.data.id, results: results, path: path }
                 });
