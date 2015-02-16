@@ -44,7 +44,7 @@ Installation on a local c9v3 instance
 Installation on c9.io
 ---------------------
 
-Run the following in the c9 terminal in `~`:
+Run the following in `~` (via the c9 terminal):
 
     # Install native dependencies
     sudo apt-get install llvm-3.5 llvm-3.5-dev lvm-3.5-runtime libclang-3.5-dev libclang1-3.5
@@ -57,7 +57,7 @@ Run the following in the c9 terminal in `~`:
 
     # Start cloud9 in debug mode to activate the plugin
     https://ide.c9.io/[username]/[project]?sdk=1&debug=2
-    
+
 License
 -------
 
