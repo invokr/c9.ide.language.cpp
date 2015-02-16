@@ -44,6 +44,20 @@ Installation on a local c9v3 instance
 Installation on c9.io
 ---------------------
 
+Run the following in the c9 terminal in `~`:
+
+    # Install native dependencies
+    sudo apt-get install llvm-3.5 llvm-3.5-dev lvm-3.5-runtime libclang-3.5-dev libclang1-3.5
+
+    # Install clang-autocomplete
+    npm install clang-autocomplete
+
+    # Install the plugin
+    mkdir .c9/plugins && git clone https://github.com/invokr/c9.ide.language.cpp .c9/plugins/c9.ide.language.cpp
+
+    # Start cloud9 in debug mode to activate the plugin
+    https://ide.c9.io/[username]/[project]?sdk=1&debug=2
+    
 License
 -------
 
