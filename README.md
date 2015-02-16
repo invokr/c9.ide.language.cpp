@@ -24,11 +24,22 @@ completion is finished.
 Requirements
 ------------
 
- - libclang-c
- - clang-autocomplete (npm)
+ * libclang, libllvm
+ * clang-autocomplete (npm)
+ * Linux, FreeBSD, OS X (untested but should work in theory)
 
 Installation on a local c9v3 instance
 -------------------------------------
+
+ * Install the cloud9-sdk as per the instructions in the official repository
+ * Install libclang and libllvm for your platform
+ * `cd <c9-sdk-folder>`
+ * `npm install clang-autocomplete`
+   * If the above fails, make sure libllvm and libclang are installed
+   * Clone the [clang-autocomplete repository](https://github.com/invokr/clang-autocomplete): `git clone <r> node_modules/clang-autocomplete`
+   * Check if the correct include path is set in `bindings.gyp`
+   * Run `node-gyp configure && node-gyp build`
+ * Add the plugin to `<c9-sdk-foler>/configs/client-default.js` (e.g. in line 289)
 
 Installation on c9.io
 ---------------------
