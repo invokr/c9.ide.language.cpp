@@ -69,14 +69,13 @@ define(function(require, exports, module) {
             // Read settings
             settings.on("read", function(e) {
                 // project specific settings
-                settings.setDefaults("project/c_cpp/", [
+                settings.setDefaults("project/c_cpp", [
                     ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
                 ]);
 
                 // user settings
-                settings.setDefaults("user/c_cpp/", [
+                settings.setDefaults("user/c_cpp", [
                     ["cacheTimeout", "30"],
-                    ["clear", "true"]
                 ]);
             }, plugin);
 
@@ -85,7 +84,7 @@ define(function(require, exports, module) {
                 server.set_args(value.split("\n"));
             }, plugin);
 
-            settings.on("project/c_cpp/@cacheTimeout", function(value){
+            settings.on("user/c_cpp/@cacheTimeout", function(value){
                 server.set_expiration(value);
             }, plugin);
 
