@@ -11,6 +11,17 @@ define(function(require, exports, module) {
     var completer = module.exports = Object.create(baseLanguageHandler);
     var uId = 0;
 
+    // returns index of last full word
+    function get_last_word_start(str) {
+        var last = 0;
+        for (var i = 0; i < str.length; ++i) {
+            if (!str[i].match(/\w/)) {
+                last = i+1;
+            }
+        }
+        return last;
+    }
+
     // takes care of initial plugin registration
     completer.init = function(callback) {
         callback();
@@ -42,6 +53,15 @@ define(function(require, exports, module) {
             var results = []; // results to return
             var line = doc.getLine(pos.row); // active line
 
+            // match line to last full word
+            var wIdx = get_last_word_start(line.substr(0, pos.column));
+            var wMatch = false;
+
+            if (wIdx < line.length) {
+                // last index is within boundaries
+                wMatch = line.substr(wIdx);
+            }
+
             _.forEach(ev.data.results, function(result) {
                 // variables used in the result
                 var r_name, r_meta, r_replace, r_doc = "";
@@ -55,17 +75,16 @@ define(function(require, exports, module) {
                         r_name = result.name;
                         r_doc = result.description;
                         r_replace = result.name;
-                        r_priority = 1004;
                         r_icon = "package";
                         break;
 
                     // a single function, almost always emitted
                     case "function":
-                        r_name = result.name;
+                        r_name = result.name + "(" + result.params.join(", ") + ")";
                         r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
                         r_replace = result.name + "(";
-                        r_priority = 1001;
                         r_icon = "method";
+                        //r_meta = "(" + result.params.join(", ") + ")";
                         break;
 
                     // variable
@@ -78,18 +97,18 @@ define(function(require, exports, module) {
 
                     // type definition
                     case "typedef":
-                        r_priority = 1004;
+                        //r_priority = 1004;
                         r_name = result.name;
-                        r_meta = "typedef";
                         r_replace = result.name;
                         break;
 
                     // class method
                     case "method":
-                        r_name = result.name;
+                        r_name = result.name + "(" + result.params.join(", ") + ")";
                         r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
                         r_replace = result.name + "(";
                         r_icon = "method";
+                        //r_meta = "(" + result.params.join(", ") + ")";
                         break;
 
                     // class attribute
@@ -120,15 +139,16 @@ define(function(require, exports, module) {
                         r_priority = 1010;
                         r_name = result.name;
                         r_replace = result.name;
-                        r_meta = "param";
                         break;
                 }
 
-                // add result to list
-                results.push({
-                    name: r_name, meta: r_meta, replaceText: r_replace,
-                    icon: r_icon, priority: r_priority, doc: r_doc
-                })
+                if (!wMatch || r_name.substr(0, wMatch.length) == wMatch) {
+                    // add result to list
+                    results.push({
+                        name: r_name, meta: r_meta, replaceText: r_replace,
+                        icon: r_icon, priority: r_priority, doc: r_doc
+                    });
+                }
             });
 
             callback(results);
