@@ -18,20 +18,40 @@ define(function(require, exports, module) {
         var Plugin = imports.Plugin;
         var plugin = new Plugin("Robin Dietrich", main.consumes);
         var tabManager = imports.tabManager;
+        var c9 = imports.c9;
         var save = imports.save;
         var settings = imports.settings;
         var prefs = imports.preferences;
         var fs = imports.fs;
 
         // Use this to get the full file path for clang-autocomplete
-        var basedir = imports.c9.workspaceDir;
+        var basedir = c9.workspaceDir;
 
-        // Worker / Server components
-        var server = null;
-        var worker_cc = null;
-        var worker_diag = null;
+        // External clang_tool component
+        var clang_tool = null;
 
-        // Registeres our language handlers
+        function loadClangTool() {
+            ext.loadRemotePlugin("clang_tool", {
+                code: require("text!./server/cpp_server.js"),
+                redefine: !clang_tool
+            }, function(err, plugin) {
+                if (err) {
+                    alert("[c9.ide.language.cpp] Error initializing server: ", err);
+                    return;
+                }
+
+                clang_tool = plugin;
+                clang_tool.load();
+                clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
+            });
+        }
+
+        c9.on("connect", loadClangTool);
+        c9.on("disconnect", function() {
+            clang_tool = null;
+        });
+
+        // Register our language handlers
         /*language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
             if (err) console.log(err);
 
@@ -49,35 +69,9 @@ define(function(require, exports, module) {
             worker_diag.on("invokeDiagnose", diagnose);
         });*/
 
-        // Initialized the server side handler
+        // Initialize the plugin
         plugin.on("load", function() {
-            // Load our server side plugin
-            ext.loadRemotePlugin("clang_tool", {
-                code: require("text!./server/cpp_server.js"),
-                redefine: !server
-            }, function(err, server_) {
-                if (err)
-                    console.log(err);
-
-                server = server_;
-                server.load();
-                server.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
-            });
-
-            // Read settings
-            settings.on("read", function(e) {
-                // project specific settings
-                settings.setDefaults("project/c_cpp", [
-                    ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
-                ]);
-            }, plugin);
-
-            // Listen to updates
-            settings.on("project/c_cpp/@compilerArguments", function(value){
-                server.set_args(value.split("\n"));
-            }, plugin);
-
-            // Project specific preferences
+            // Add project specific preferences
             prefs.add({
                 "Project" : {
                     "C / C++" : {
@@ -93,41 +87,34 @@ define(function(require, exports, module) {
                     }
                 }
             }, plugin);
+
+            // Set default values
+            settings.on("read", function(e) {
+                settings.setDefaults("project/c_cpp", [
+                    ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
+                ]);
+            }, plugin);
+
+            // Listen to updates
+            settings.on("project/c_cpp/@compilerArguments", function(value) {
+                if (clang_tool)
+                    clang_tool.setArgs(value.split("\n"));
+            }, plugin);
         });
 
-        // Make sure the plugin is unloaded so that cached translation units get purged
+        // Make sure the plugin is unloaded correctly so that cached translation units get purged
         plugin.on("unload", function(){
-            if (server) {
-                server.unload();
-                server = null;
-                worker_cc = null;
-                worker_diag = null;
+            if (clang_tool) {
+                clang_tool.unload();
+                clang_tool = null;
             }
         });
 
         // Public api for the cpp plugin
-        plugin.freezePublicAPI({
-            // Returns code completion results
-            complete: function(path, row, col, callback) {
-                if (server) {
-                    server.complete(path, row, col, callback);
-                } else {
-                    callback("Server not initialized yet.");
-                }
-            },
-
-            // Returns clang's diagnostic information
-            diagnose: function(path, callback) {
-                if (server) {
-                    server.diagnose(path, callback);
-                } else {
-                    callback("Server not initialized yet.");
-                }
-            }
-        });
+        plugin.freezePublicAPI({});
 
         // Calls the code completion function
-        function ccomplete(ev) {
+        /*function ccomplete(ev) {
             // get value and original path
             var value = tabManager.focussedTab.document.value;
             var path = basedir+tabManager.focussedTab.path;
@@ -151,7 +138,7 @@ define(function(require, exports, module) {
                     data: { id: ev.data.id, results: results, path: path }
                 });
             });
-        }
+        }*/
 
         // Registers our plugin with C9
         register(null, { cpp: plugin });
