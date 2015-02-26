@@ -11,6 +11,20 @@ define(function(require, exports, module) {
 
     return main;
 
+    // returns true if file is handled by us (by extension)
+    function is_c_cpp(filename) {
+        // handled extensions
+        var _extensions = ["c", "h", "cc", "cpp", "hpp", "cxx", "hxx"];
+
+        // get extension
+        var _extension = filename.split(".");
+        if (_extension.length < 2)
+            return false;
+
+        _extension = _extension[_extension.length - 1];
+        return (_extensions.indexOf(_extension) >= 0);
+    }
+
     function main(options, imports, register) {
         var _ = require("lodash");
         var language = imports.language;
@@ -52,15 +66,31 @@ define(function(require, exports, module) {
         });
 
         // Register our language handlers
-        /*language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
-            if (err) console.log(err);
+        var worker_cc = null;
+
+        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
+            if (err) {
+                alert("[[c9.ide.language.cpp] Error initializing worker: ", err);
+                return;
+            }
 
             // Set worker object and register callback's
             worker_cc = worker_;
-            worker_cc.on("invokeCompletion", ccomplete);
+
+            // Put each document that is opened and handled on the index
+            worker_cc.on("documentOpened", function(event) {
+                if (is_c_cpp(event.data.path))
+                    clang_tool.indexTouch(basedir+event.data.path);
+            });
+
+            // Automatically free memory of closed objects
+            worker_cc.on("documentClosed", function(event) {
+                if (is_c_cpp(event.data.path))
+                    clang_tool.indexClear(basedir+event.data.path);
+            });
         });
 
-        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/diagnose_worker', function(err, worker_) {
+        /*language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/diagnose_worker', function(err, worker_) {
             if (err)
                 console.log(err);
 
@@ -107,6 +137,7 @@ define(function(require, exports, module) {
             if (clang_tool) {
                 clang_tool.unload();
                 clang_tool = null;
+                worker_cc = null;
             }
         });
 

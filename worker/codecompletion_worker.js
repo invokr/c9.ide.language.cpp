@@ -33,12 +33,19 @@ define(function(require, exports, module) {
     };
 
     // do an initial parse to speed things up in the future
-    console.onDocumentOpen = function (path, doc, oldPath, callback) {
+    completer.onDocumentOpen = function (path, doc, oldPath, callback) {
+        completer.sender.emit("documentOpened", {path: path});
+        callback();
+    };
+
+    // send closing info
+    completer.onDocumentClose = function (path, callback) {
+        completer.sender.emit("documentClosed", {path: path});
         callback();
     };
 
     // do some code completion magic
-    completer.complete = function(doc, fullAst, pos, currentNode, callback) {
+    /*completer.complete = function(doc, fullAst, pos, currentNode, callback) {
         // create a unique numeric id to identify correct callback relationships
         var cId = ++uId;
 
@@ -160,5 +167,5 @@ define(function(require, exports, module) {
             pos: pos,
             id: cId
         });
-    };
+    };*/
 });
