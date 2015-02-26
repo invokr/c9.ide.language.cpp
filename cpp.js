@@ -32,7 +32,7 @@ define(function(require, exports, module) {
         var worker_diag = null;
 
         // Registeres our language handlers
-        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
+        /*language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
             if (err) console.log(err);
 
             // Set worker object and register callback's
@@ -47,14 +47,13 @@ define(function(require, exports, module) {
             // Set worker object and register callback's
             worker_diag = worker_;
             worker_diag.on("invokeDiagnose", diagnose);
-        });
+        });*/
 
         // Initialized the server side handler
         plugin.on("load", function() {
             // Load our server side plugin
-            ext.loadRemotePlugin("codecompletion_server", {
+            ext.loadRemotePlugin("clang_tool", {
                 code: require("text!./server/cpp_server.js"),
-                extendToken: false,
                 redefine: !server
             }, function(err, server_) {
                 if (err)
@@ -62,8 +61,7 @@ define(function(require, exports, module) {
 
                 server = server_;
                 server.load();
-                server.set_args(settings.get("project/c_cpp/@compilerArguments").split("\n"));
-                server.set_expiration(settings.get("project/c_cpp/@cacheTimeout"));
+                server.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
             });
 
             // Read settings
@@ -72,20 +70,11 @@ define(function(require, exports, module) {
                 settings.setDefaults("project/c_cpp", [
                     ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
                 ]);
-
-                // user settings
-                settings.setDefaults("user/c_cpp", [
-                    ["cacheTimeout", "30"],
-                ]);
             }, plugin);
 
             // Listen to updates
             settings.on("project/c_cpp/@compilerArguments", function(value){
                 server.set_args(value.split("\n"));
-            }, plugin);
-
-            settings.on("user/c_cpp/@cacheTimeout", function(value){
-                server.set_expiration(value);
             }, plugin);
 
             // Project specific preferences
@@ -100,23 +89,6 @@ define(function(require, exports, module) {
                            rowheight: 155,
                            path: "project/c_cpp/@compilerArguments",
                            position: 5000
-                        }
-                    }
-                }
-            }, plugin);
-
-            // User specific preferences
-            prefs.add({
-                "Language" : {
-                    position: 500,
-                    "C / C++" : {
-                        position: 100,
-                        "Cache Expiration Time" : {
-                            type: "spinner",
-                            path: "user/c_cpp/@cacheTimeout",
-                            position: 6000,
-                            min: "1",
-                            max: "120"
                         }
                     }
                 }
