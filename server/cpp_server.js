@@ -55,10 +55,10 @@ module.exports = function (vfs, options, register) {
         indexClear: function(file) {
             if (typeof(file) != "undefined") {
                 myLog("[cpp_server indexClear]", file);
-                clang_obj.clear(file);
+                clang_obj.indexClear(file);
             } else {
                 myLog("[cpp_server indexClear]");
-                clang_obj.clear();
+                clang_obj.indexClear();
             }
         },
 
