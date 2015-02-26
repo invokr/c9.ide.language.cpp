@@ -12,8 +12,16 @@ var fs = require("fs");
 // Set this to true during development
 var debug = true;
 var myLog = function(msg) {
+    var toLog = "";
+    for (var i = 0; i < arguments.length; ++i) {
+        if (typeof(arguments[i]) == "object")
+            toLog += JSON.stringify(arguments[i]) + " ";
+        else
+            toLog += arguments[i] + " ";
+    }
+    
     if (debug)
-        console.log(msg);
+        console.log(toLog);
 };
 
 // Server side version of our code completion module
