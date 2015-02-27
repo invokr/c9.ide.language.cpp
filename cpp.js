@@ -88,16 +88,21 @@ define(function(require, exports, module) {
                 if (is_c_cpp(event.data.path))
                     clang_tool.indexClear(basedir+event.data.path);
             });
+
+            // Handle code completion
+            worker_cc.on("completion", function(event) {
+                var value = tabManager.focussedTab.document.value;
+                var path = basedir+tabManager.focussedTab.path;
+
+                // add temporary data to index
+                clang_tool.indexTouchUnsaved(path, value);
+
+                // do the code completion
+                clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
+                    worker_cc.emit("completionResult", {data: {id: event.data.id, results: res}});
+                });
+            });
         });
-
-        /*language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/diagnose_worker', function(err, worker_) {
-            if (err)
-                console.log(err);
-
-            // Set worker object and register callback's
-            worker_diag = worker_;
-            worker_diag.on("invokeDiagnose", diagnose);
-        });*/
 
         // Initialize the plugin
         plugin.on("load", function() {
@@ -143,33 +148,6 @@ define(function(require, exports, module) {
 
         // Public api for the cpp plugin
         plugin.freezePublicAPI({});
-
-        // Calls the code completion function
-        /*function ccomplete(ev) {
-            // get value and original path
-            var value = tabManager.focussedTab.document.value;
-            var path = basedir+tabManager.focussedTab.path;
-
-            // do completion on the new file
-            server.complete(path, value, ev.data.pos.row+1, ev.data.pos.column+1, function(err, results) {
-                worker_cc.emit("invokeCompletionReturn", {
-                    data: { id: ev.data.id, results: results }
-                });
-            });
-        }
-
-        // Calls the diagnose function
-        function diagnose(ev) {
-            // get value and original path
-            var value = tabManager.focussedTab.document.value;
-            var path = basedir+tabManager.focussedTab.path;
-
-            server.diagnose(path, value, function(err, results) {
-                worker_diag.emit("diagnoseReturn", {
-                    data: { id: ev.data.id, results: results, path: path }
-                });
-            });
-        }*/
 
         // Registers our plugin with C9
         register(null, { cpp: plugin });

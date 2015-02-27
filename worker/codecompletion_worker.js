@@ -44,6 +44,30 @@ define(function(require, exports, module) {
         callback();
     };
 
+    // code completion
+    completer.complete = function(doc, fullAst, pos, currentNode, callback) {
+        // create a unique numeric id to identify correct callback relationships
+        var cId = ++uId;
+
+        // cb when code completion is done
+        completer.sender.on("completionResult", function tmp(event) {
+            if (event.data.id != cId)
+                return;
+
+            // unregister this cb
+            completer.sender.off("invokeCompletionReturn", tmp);
+
+            // send results back
+            callback([]);
+        });
+
+        // send completion data to the server
+        completer.sender.emit("completion", {
+            pos: pos,
+            id: cId
+        });
+    };
+
     // do some code completion magic
     /*completer.complete = function(doc, fullAst, pos, currentNode, callback) {
         // create a unique numeric id to identify correct callback relationships
