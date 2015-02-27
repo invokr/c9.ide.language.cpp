@@ -19,7 +19,7 @@ var myLog = function(msg) {
         else
             toLog += arguments[i] + " ";
     }
-    
+
     if (debug)
         console.log(toLog);
 };
@@ -43,6 +43,12 @@ module.exports = function (vfs, options, register) {
         indexTouch: function(file) {
             myLog("[cpp_server indexTouch]", file);
             clang_obj.indexTouch(file);
+        },
+
+        // Add unsaved contents to index
+        indexTouchUnsaved: function(file, content) {
+            myLog("[cpp_server indexTouchUnsaved]", file);
+            clang_obj.indexTouchUnsaved(file, content);
         },
 
         // Returns memory usage for each file on the index
