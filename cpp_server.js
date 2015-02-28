@@ -104,34 +104,6 @@ module.exports = function (vfs, options, register) {
             cb(false, clang_obj.cursorDeclarationAt(file, row, col));
         },
 
-        // Tries to complete the code at the given file position
-        /*complete: function(path, value, row, col, callback) {
-            // temp file needs to be in the same path so that includes actually work
-            var tmp_path = path.substr(0, path.lastIndexOf("/")+1) + ".tmpcmpl_" + path.substr(path.lastIndexOf("/")+1);
-
-            // write, call, delete
-            fs.writeFileSync(tmp_path, value);
-            var results = ccomplete.Complete(tmp_path, row, col);
-            fs.unlinkSync(tmp_path);
-
-            // run callback
-            callback(0, results);
-        },
-
-        // Returns anything that clang's diagnostic feature emits
-        diagnose: function(path, value, callback) {
-            // temp file needs to be in the same path so that includes actually work
-            var tmp_path = path.substr(0, path.lastIndexOf("/")+1) + ".tmpdiag_" + path.substr(path.lastIndexOf("/")+1);
-
-            // write, call, delete
-            fs.writeFileSync(tmp_path, value);
-            var results = ccomplete.Diagnose(path);
-            fs.unlinkSync(tmp_path);
-
-            // run callback
-            callback(0, results);
-        },*/
-
         // Should be called to clean up the memory of ccomplete
         unload: function() {
             // @todo: investigate if v8 is smart enough to realize no one is holding a reference
