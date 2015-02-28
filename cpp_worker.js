@@ -175,4 +175,52 @@ define(function(require, exports, module) {
             id: cId
         });
     };
+
+    // Propagate clang diagnostics
+    completer.analyze = function(value, ast, callback) {
+        // create a unique numeric id to identify correct callback relationships
+        var cId = ++uId;
+
+        // wait for the result and invoke the complete.callback function
+        completer.sender.on("diagnoseResult", function invoTmp(ev) {
+            if (ev.data.id != cId)
+                return;
+
+            // unregister this cb
+            completer.sender.off("diagnoseResult", invoTmp);
+
+            var results = []; // results to return
+            _.forEach(ev.data.results, function(res) {
+                var level = "";
+
+                switch (res.severity) {
+                    case 2:
+                        level = "warning";
+                        break;
+                    case 3:
+                        level = "error";
+                        break;
+                    default:
+                        level = "info";
+                        break;
+                }
+
+                results.push({
+                    pos: {
+                        sl: res.row-1,
+                        sc: res.col-1
+                    },
+                    level: level,
+                    message: res.summary
+                });
+            });
+
+            callback(results);
+        });
+
+        // send the completion data to the server
+        completer.sender.emit("diagnose", {
+            id: cId
+        });
+    };
 });

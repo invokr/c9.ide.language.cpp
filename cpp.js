@@ -112,11 +112,14 @@ define(function(require, exports, module) {
                 var path = basedir+tabManager.focussedTab.path;
 
                 // add temporary data to index
-                clang_tool.indexTouchUnsaved(path, value);
+                //clang_tool.indexTouch(path);
+                //clang_tool.indexTouchUnsaved(path, value);
 
                 // diagnosis
                 clang_tool.fileDiagnose(path, function(err, res) {
-                    worker.emit("diagnoseResult", {data: {id: event.data.id, results: res}});
+                    // This is unstable, @todo: find out what's crashing clang
+                    //worker.emit("diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
+                    worker.emit("diagnoseResult", {data: {id: event.data.id, results: [], path: path}});
                 })
             });
         });
@@ -159,7 +162,7 @@ define(function(require, exports, module) {
             if (clang_tool) {
                 clang_tool.unload();
                 clang_tool = null;
-                worker_cc = null;
+                worker = null;
             }
         });
 
