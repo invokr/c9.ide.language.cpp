@@ -11,6 +11,24 @@ define(function(require, exports, module) {
     var completer = module.exports = Object.create(baseLanguageHandler);
     var uId = 0;
 
+    // different completion types
+    var completion_type = {
+        namespace_t: 0,
+        class_t: 1,
+        attribute_t: 2,
+        method_t: 3,
+        parameter_t: 4,
+        struct_t: 5,
+        function_t: 6,
+        enum_t: 7,
+        enum_static_t: 8,
+        union_t: 9,
+        typedef_t: 10,
+        variable_t: 11,
+        macro_t: 12,
+        unkown_t: 13,
+    };
+
     // caches last results
     var last_results = null;
     var last_pos = 0;
@@ -54,6 +72,12 @@ define(function(require, exports, module) {
         var filter_match = function (search, text) {
             var idx = 0;
 
+            if (search == text)
+                return true;
+
+            if (text.substr(0, search.length) == search)
+                return true;
+
             for (var i = 0; i < text.length; ++i) {
                 if (idx == search.length)
                     return true;
@@ -83,9 +107,30 @@ define(function(require, exports, module) {
             _.forEach(ret, function(res) {
                 var r_meta = res.args.length ? "("+res.args.join(", ")+")" : null;
 
+                var r_icon = null;
+                var r_priority = 100;
+                switch (res.type) {
+                    case completion_type.function_t:
+                    case completion_type.method_t:
+                        r_icon = "method";
+                        break;
+                    case completion_type.class_t:
+                    case completion_type.struct_t:
+                    case completion_type.union_t:
+                        r_icon = "package";
+                        break;
+                    case completion_type.parameter_t:
+                        r_priority = 200; // current parameter in the function call
+                    case completion_type.attribute_t:
+                        r_icon = "attribute";
+                        break;
+                    default:
+                        break;
+                }
+
                 retConv.push({
                     name: res.name, meta: r_meta, replaceText: res.name,
-                    icon: null, priority: 100, doc: ""
+                    icon: r_icon, priority: r_priority, doc: null
                 });
             });
 
@@ -105,7 +150,7 @@ define(function(require, exports, module) {
 
         // check if we can use cached results
         if (last_results && last_pos.row == pos.row && last_pos.column == pos.column) {
-            callback(last_results);
+            callback(filter_results(last_results, wMatch));
             return;
         }
 
@@ -117,11 +162,11 @@ define(function(require, exports, module) {
             // unregister this cb
             completer.sender.off("invokeCompletionReturn", tmp);
 
-            last_results = filter_results(event.data.results, wMatch);
+            last_results = event.data.results
             last_pos = pos;
 
             // send results back
-            callback(last_results);
+            callback(filter_results(last_results, wMatch));
         });
 
         // send completion data to the server
@@ -130,129 +175,4 @@ define(function(require, exports, module) {
             id: cId
         });
     };
-
-    // do some code completion magic
-    /*completer.complete = function(doc, fullAst, pos, currentNode, callback) {
-        // create a unique numeric id to identify correct callback relationships
-        var cId = ++uId;
-
-        // wait for the result and invoke the complete.callback function
-        completer.sender.on("invokeCompletionReturn", function invoTmp(ev) {
-            if (ev.data.id != cId)
-                return;
-
-            // unregister this cb
-            completer.sender.off("invokeCompletionReturn", invoTmp);
-
-            var results = []; // results to return
-            var line = doc.getLine(pos.row); // active line
-
-            // match line to last full word
-            var wIdx = get_last_word_start(line.substr(0, pos.column));
-            var wMatch = false;
-
-            if (wIdx < line.length) {
-                // last index is within boundaries
-                wMatch = line.substr(wIdx);
-            }
-
-            _.forEach(ev.data.results, function(result) {
-                // variables used in the result
-                var r_name, r_meta, r_replace, r_doc = "";
-                var r_icon = null;
-                var r_priority = 1005;
-
-                switch(result.type) {
-                    // struct, class, union, enum, enum member
-                    case "enum_member":
-                    case "def":
-                        r_name = result.name;
-                        r_doc = result.description;
-                        r_replace = result.name;
-                        r_icon = "package";
-                        break;
-
-                    // a single function, almost always emitted
-                    case "function":
-                        r_name = result.name + "(" + result.params.join(", ") + ")";
-                        r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
-                        r_replace = result.name + "(";
-                        r_icon = "method";
-                        //r_meta = "(" + result.params.join(", ") + ")";
-                        break;
-
-                    // variable
-                    case "variable":
-                        r_name = result.name;
-                        r_doc = result.return + " " + result.name;
-                        r_replace = result.name;
-                        r_icon = "property";
-                        break;
-
-                    // type definition
-                    case "typedef":
-                        //r_priority = 1004;
-                        r_name = result.name;
-                        r_replace = result.name;
-                        break;
-
-                    // class method
-                    case "method":
-                        r_name = result.name + "(" + result.params.join(", ") + ")";
-                        r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
-                        r_replace = result.name + "(";
-                        r_icon = "method";
-                        //r_meta = "(" + result.params.join(", ") + ")";
-                        break;
-
-                    // class attribute
-                    case "member":
-                        r_name = result.name;
-                        r_doc = result.return + " " + result.name;
-                        r_replace = result.name;
-                        r_icon = "property";
-                        break;
-
-                    // namespace
-                    case "namespace":
-                        r_name = result.name;
-                        r_meta = "namespace";
-                        r_replace = result.name + "::";
-                        break;
-
-                    // constructor
-                    case "constructor":
-                        r_name = result.name + "(" + result.params.join(", ") + ")";
-                        r_doc = result.return + " <strong>" + result.name + "</strong>(" + result.params.join(", ") + ")"
-                        r_replace = result.name;
-                        r_icon = "package";
-                        break;
-
-                    // current argument in function
-                    case "current":
-                        r_priority = 1010;
-                        r_name = result.name;
-                        r_replace = result.name;
-                        break;
-                }
-
-                if (!wMatch || r_name.substr(0, wMatch.length) == wMatch) {
-                    // add result to list
-                    results.push({
-                        name: r_name, meta: r_meta, replaceText: r_replace,
-                        icon: r_icon, priority: r_priority, doc: r_doc
-                    });
-                }
-            });
-
-            callback(results);
-        });
-
-
-        // send the completion data to the server
-        completer.sender.emit("invokeCompletion", {
-            pos: pos,
-            id: cId
-        });
-    };*/
 });
