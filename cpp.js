@@ -46,7 +46,7 @@ define(function(require, exports, module) {
 
         function loadClangTool() {
             ext.loadRemotePlugin("clang_tool", {
-                code: require("text!./server/cpp_server.js"),
+                code: require("text!./cpp_server.js"),
                 redefine: !clang_tool
             }, function(err, plugin) {
                 if (err) {
