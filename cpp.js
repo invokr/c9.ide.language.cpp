@@ -71,7 +71,7 @@ define(function(require, exports, module) {
         // Register our language handlers
         var worker_cc = null;
 
-        language.registerLanguageHandler('plugins/c9.ide.language.cpp/worker/codecompletion_worker', function(err, worker_) {
+        language.registerLanguageHandler('plugins/c9.ide.language.cpp/cpp_worker', function(err, worker_) {
             if (err) {
                 alert("[[c9.ide.language.cpp] Error initializing worker: ", err);
                 return;
