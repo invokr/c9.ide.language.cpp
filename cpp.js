@@ -68,8 +68,8 @@ define(function(require, exports, module) {
             }
         });
 
-        // Register our language handlers
-        var worker_cc = null;
+        // Register our language handler
+        var worker = null;
 
         language.registerLanguageHandler('plugins/c9.ide.language.cpp/cpp_worker', function(err, worker_) {
             if (err) {
@@ -78,22 +78,22 @@ define(function(require, exports, module) {
             }
 
             // Set worker object and register callback's
-            worker_cc = worker_;
+            worker = worker_;
 
             // Put each document that is opened and handled on the index
-            worker_cc.on("documentOpened", function(event) {
+            worker.on("documentOpened", function(event) {
                 if (is_c_cpp(event.data.path))
                     clang_tool.indexTouch(basedir+event.data.path);
             });
 
             // Automatically free memory of closed objects
-            worker_cc.on("documentClosed", function(event) {
+            worker.on("documentClosed", function(event) {
                 if (is_c_cpp(event.data.path))
                     clang_tool.indexClear(basedir+event.data.path);
             });
 
             // Handle code completion
-            worker_cc.on("completion", function(event) {
+            worker.on("completion", function(event) {
                 var value = tabManager.focussedTab.document.value;
                 var path = basedir+tabManager.focussedTab.path;
 
@@ -102,8 +102,22 @@ define(function(require, exports, module) {
 
                 // do the code completion
                 clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
-                    worker_cc.emit("completionResult", {data: {id: event.data.id, results: res}});
+                    worker.emit("completionResult", {data: {id: event.data.id, results: res}});
                 });
+            });
+
+            // Handle diagnostics
+            worker.on("diagnose", function(event) {
+                var value = tabManager.focussedTab.document.value;
+                var path = basedir+tabManager.focussedTab.path;
+
+                // add temporary data to index
+                clang_tool.indexTouchUnsaved(path, value);
+
+                // diagnosis
+                clang_tool.fileDiagnose(path, function(err, res) {
+                    worker.emit("diagnoseResult", {data: {id: event.data.id, results: res}});
+                })
             });
         });
 
