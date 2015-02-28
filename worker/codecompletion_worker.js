@@ -100,7 +100,6 @@ define(function(require, exports, module) {
         var wIdx = get_last_word_start(line.substr(0, pos.column));
 
         // pull back completion to the beginning if we have a full word start
-        console.log(pos.column, wIdx);
         pos.column = wIdx;
         var wMatch = line.substr(wIdx);
 
