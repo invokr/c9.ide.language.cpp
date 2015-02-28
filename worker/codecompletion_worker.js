@@ -11,6 +11,10 @@ define(function(require, exports, module) {
     var completer = module.exports = Object.create(baseLanguageHandler);
     var uId = 0;
 
+    // caches last results
+    var last_results = null;
+    var last_pos = 0;
+
     // returns index of last full word
     function get_last_word_start(str) {
         var last = 0;
@@ -46,8 +50,65 @@ define(function(require, exports, module) {
 
     // code completion
     completer.complete = function(doc, fullAst, pos, currentNode, callback) {
+        // returns true if one strings is a subsequent match to another
+        var filter_match = function (search, text) {
+            var idx = 0;
+
+            for (var i = 0; i < text.length; ++i) {
+                if (idx == search.length)
+                    return true;
+
+                if (text[i] == search[idx])
+                    ++idx;
+            }
+
+            return false;
+        }
+
+        // filter candidates based on entered text
+        var filter_results = function (results, txt) {
+            // match each results name to the subsequence
+            var ret = [];
+
+            if (txt.length)
+                _.forEach(results, function(res) {
+                    if (filter_match(txt, res.name))
+                        ret.push(res);
+                });
+            else
+                ret = results;
+
+            // transform to c9 format
+            var retConv = [];
+            _.forEach(ret, function(res) {
+                var r_meta = res.args.length ? "("+res.args.join(", ")+")" : null;
+
+                retConv.push({
+                    name: res.name, meta: r_meta, replaceText: res.name,
+                    icon: null, priority: 100, doc: ""
+                });
+            });
+
+            return retConv;
+        };
+
         // create a unique numeric id to identify correct callback relationships
         var cId = ++uId;
+
+        // match line to last full word
+        var line = doc.getLine(pos.row);
+        var wIdx = get_last_word_start(line.substr(0, pos.column));
+
+        // pull back completion to the beginning if we have a full word start
+        console.log(pos.column, wIdx);
+        pos.column = wIdx;
+        var wMatch = line.substr(wIdx);
+
+        // check if we can use cached results
+        if (last_results && last_pos.row == pos.row && last_pos.column == pos.column) {
+            callback(last_results);
+            return;
+        }
 
         // cb when code completion is done
         completer.sender.on("completionResult", function tmp(event) {
@@ -57,8 +118,11 @@ define(function(require, exports, module) {
             // unregister this cb
             completer.sender.off("invokeCompletionReturn", tmp);
 
+            last_results = filter_results(event.data.results, wMatch);
+            last_pos = pos;
+
             // send results back
-            callback([]);
+            callback(last_results);
         });
 
         // send completion data to the server

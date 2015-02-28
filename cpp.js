@@ -62,7 +62,10 @@ define(function(require, exports, module) {
 
         c9.on("connect", loadClangTool);
         c9.on("disconnect", function() {
-            clang_tool = null;
+            if (clang_tool) {
+                clang_tool.indexClear();
+                clang_tool = null;
+            }
         });
 
         // Register our language handlers
