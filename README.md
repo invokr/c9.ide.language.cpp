@@ -6,13 +6,23 @@ This plugin provides C / C++ language additions to Cloud9 v3 (http:://c9.io).
 These features are currently implemented:
 
  * Code completion
- * Linting
+ * Linting and Diagnostics
+ * File Outline (Classes, Functions, Includes)
+
+These features are planned:
+ 
+ * Jump to Definition / Declaration
+ * Full Clang-AST to JS converter (including documentation blocks)
+ * Type under cursor
+ * auto / typename / decltype Type resolution under cursor
+ * Better Icons / Better Outline support
 
 Code completion and linting are implemented using clang's libclang-c bindings.
-The initial parse of each translation unit (.c, .h) can take up to ten seconds,
-depending on the number and complexity of includes.
+The initial parse of each translation unit (.c, .h) can take up to one second,
+depending on the number and complexity of additional files to parse.
 
 Time for subsequent parses is greatly improved due to the build-in cache.
+
 
 Requirements
 ------------
