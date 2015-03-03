@@ -1,0 +1,13 @@
+.c_cpp_class {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_class.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
+
+.c_cpp_include {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_include.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
