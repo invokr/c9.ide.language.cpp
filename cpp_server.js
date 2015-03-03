@@ -5,27 +5,27 @@
  * @license AGPLv3 <http://www.gnu.org/licenses/agpl.html>
  */
 
-var clang_tool = require("clang_tool");
-var clang_obj = null;
-var fs = require("fs");
-
-// Set this to true during development
-var debug = true;
-var myLog = function(msg) {
-    var toLog = "";
-    for (var i = 0; i < arguments.length; ++i) {
-        if (typeof(arguments[i]) == "object")
-            toLog += JSON.stringify(arguments[i]) + " ";
-        else
-            toLog += arguments[i] + " ";
-    }
-
-    if (debug)
-        console.log(toLog);
-};
-
 // Server side version of our code completion module
 module.exports = function (vfs, options, register) {
+    var clang_tool = require("clang_tool");
+
+    // Set this to true during development
+    var debug = true;
+    var myLog = function(msg) {
+        var toLog = "";
+        for (var i = 0; i < arguments.length; ++i) {
+            if (typeof(arguments[i]) == "object")
+                toLog += JSON.stringify(arguments[i]) + " ";
+            else
+                toLog += arguments[i] + " ";
+        }
+
+        if (debug)
+            console.log(toLog);
+    };
+
+    var clang_obj = null;
+
     register(null, {
         // Should be called when the server is first invoked, do not call multiple times
         load: function() {
