@@ -5,7 +5,7 @@
 define(function(require, exports, module) {
     main.consumes = [
         "Plugin", "language", "ext", "tabManager", "c9", "save",
-        "settings", "preferences", "fs"
+        "settings", "preferences", "fs", "ui"
     ];
     main.provides = ["cpp"];
 
@@ -37,6 +37,8 @@ define(function(require, exports, module) {
         var settings = imports.settings;
         var prefs = imports.preferences;
         var fs = imports.fs;
+        var ui = imports.ui;
+
 
         // Use this to get the full file path for clang-autocomplete
         var basedir = c9.workspaceDir;
@@ -82,18 +84,44 @@ define(function(require, exports, module) {
 
             // Put each document that is opened and handled on the index
             worker.on("documentOpened", function(event) {
-                if (is_c_cpp(event.data.path))
-                    clang_tool.indexTouch(basedir+event.data.path);
+                if (!is_c_cpp(event.data.path))
+                    return;
+
+                // add to index
+                clang_tool.indexTouch(basedir+event.data.path);
+            });
+
+            // Listen fo file saves and add on-disk content to the index
+            // This might trigger when documentClosed is emitted and do one
+            // additional parse before indexClear is called.
+            save.on("afterSave", function(ev) {
+                if (!is_c_cpp(ev.path))
+                    return;
+
+                // add / update on index
+                clang_tool.indexTouch(basedir+ev.path);
             });
 
             // Automatically free memory of closed objects
             worker.on("documentClosed", function(event) {
-                if (is_c_cpp(event.data.path))
-                    clang_tool.indexClear(basedir+event.data.path);
+                if (!is_c_cpp(event.data.path))
+                    return;
+
+                clang_tool.indexClear(basedir+event.data.path);
             });
 
+            //
+            // Important:
+            // Do not run indexTouch or indexTouchUnsaved for each and every worker action.
+            // Certain actions may be interleaved, creating a indexTouch <-> indexTouchUnsaved chain
+            // that takes forever to resolve.
+            //
+            // + Call indexTouchUnsaved in all worker functions that handle temp data
+            // + Call indexTouch only on save events
+            //
+
             // Handle code completion
-            worker.on("completion", function(event) {
+            worker.on("_completion", function(event) {
                 var value = tabManager.focussedTab.document.value;
                 var path = basedir+tabManager.focussedTab.path;
 
@@ -102,25 +130,36 @@ define(function(require, exports, module) {
 
                 // do the code completion
                 clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
-                    worker.emit("completionResult", {data: {id: event.data.id, results: res}});
+                    worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
                 });
             });
 
             // Handle diagnostics
-            worker.on("diagnose", function(event) {
+            worker.on("_diagnose", function(event) {
                 var value = tabManager.focussedTab.document.value;
                 var path = basedir+tabManager.focussedTab.path;
 
-                // add temporary data to index
-                //clang_tool.indexTouch(path);
-                //clang_tool.indexTouchUnsaved(path, value);
-
-                // diagnosis
                 clang_tool.fileDiagnose(path, function(err, res) {
-                    // This is unstable, @todo: find out what's crashing clang
-                    //worker.emit("diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
-                    worker.emit("diagnoseResult", {data: {id: event.data.id, results: [], path: path}});
-                })
+                    res = _.filter(res, function(r) {
+                        return r.file == path;
+                    });
+
+                    worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
+                    //worker.emit("_diagnoseResult", {data: {id: event.data.id, results: [], path: path}});
+                });
+            });
+
+            // Handle outline
+            worker.on("_outline", function(event) {
+                var path = basedir+tabManager.focussedTab.path;
+
+                if (!is_c_cpp(path)) // Outline is called independet of handlesLanguage
+                    return;
+
+                // generate outline
+                clang_tool.fileOutline(path, function(err, res) {
+                    worker.emit("_outlineResult", {data: {id: event.data.id, results: res}});
+                });
             });
         });
 
@@ -155,6 +194,10 @@ define(function(require, exports, module) {
                 if (clang_tool)
                     clang_tool.setArgs(value.split("\n"));
             }, plugin);
+
+            // Add css
+            ui.insertCss(require("text!./icons.css"), false, plugin);
+            console.log("Added css", options.staticPrefix, require("text!./icons.css"));
         });
 
         // Make sure the plugin is unloaded correctly so that cached translation units get purged
