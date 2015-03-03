@@ -46,7 +46,7 @@ define(function(require, exports, module) {
 
     // takes care of initial plugin registration
     completer.init = function(callback) {
-        callback();
+        return callback();
     };
 
     // check if we handle the language
@@ -57,13 +57,13 @@ define(function(require, exports, module) {
     // do an initial parse to speed things up in the future
     completer.onDocumentOpen = function (path, doc, oldPath, callback) {
         completer.sender.emit("documentOpened", {path: path});
-        callback();
+        return callback();
     };
 
     // send closing info
     completer.onDocumentClose = function (path, callback) {
         completer.sender.emit("documentClosed", {path: path});
-        callback();
+        return callback();
     };
 
     // code completion
@@ -122,7 +122,7 @@ define(function(require, exports, module) {
                     case completion_type.parameter_t:
                         r_priority = 200; // current parameter in the function call
                     case completion_type.attribute_t:
-                        r_icon = "attribute";
+                        r_icon = "property";
                         break;
                     default:
                         break;
@@ -150,27 +150,26 @@ define(function(require, exports, module) {
 
         // check if we can use cached results
         if (last_results && last_pos.row == pos.row && last_pos.column == pos.column) {
-            callback(filter_results(last_results, wMatch));
-            return;
+            return callback(filter_results(last_results, wMatch));
         }
 
         // cb when code completion is done
-        completer.sender.on("completionResult", function tmp(event) {
+        completer.sender.on("_completionResult", function tmp(event) {
             if (event.data.id != cId)
                 return;
 
             // unregister this cb
-            completer.sender.off("invokeCompletionReturn", tmp);
+            completer.sender.off("_completionResult", tmp);
 
             last_results = event.data.results
             last_pos = pos;
 
             // send results back
-            callback(filter_results(last_results, wMatch));
+            return callback(filter_results(last_results, wMatch));
         });
 
         // send completion data to the server
-        completer.sender.emit("completion", {
+        completer.sender.emit("_completion", {
             pos: pos,
             id: cId
         });
@@ -182,12 +181,11 @@ define(function(require, exports, module) {
         var cId = ++uId;
 
         // wait for the result and invoke the complete.callback function
-        completer.sender.on("diagnoseResult", function invoTmp(ev) {
+        completer.sender.on("_diagnoseResult", function invoTmp(ev) {
             if (ev.data.id != cId)
                 return;
-
             // unregister this cb
-            completer.sender.off("diagnoseResult", invoTmp);
+            completer.sender.off("_diagnoseResult", invoTmp);
 
             var results = []; // results to return
             _.forEach(ev.data.results, function(res) {
@@ -215,11 +213,81 @@ define(function(require, exports, module) {
                 });
             });
 
-            callback(results);
+            return callback(results);
         });
 
         // send the completion data to the server
-        completer.sender.emit("diagnose", {
+        completer.sender.emit("_diagnose", {
+            id: cId
+        });
+    };
+
+    completer.outline = function(doc, fullAst, callback) {
+        // create a unique numeric id to identify correct callback relationships
+        var cId = ++uId;
+
+        completer.sender.on("_outlineResult", function invoTmp(ev) {
+            if (ev.data.id != cId)
+                return;
+
+            // unregister this cb
+            completer.sender.off("_outlineResult", invoTmp);
+            var items = [];
+
+            // @todo: Add location once available in clang_tool
+            _.forEach(ev.data.results.includes, function(include) {
+                items.push({
+                    icon: "c_cpp_include",
+                    name: "&lt;"+include+"&gt;",
+                    pos: { sl: 1, sc: 1 },
+                    displayPos: { sl: 1, sc: 1 }
+                });
+            });
+
+            _.forEach(ev.data.results.functions, function(func) {
+                items.push({
+                    icon: "method2",
+                    name: func.name + "(" + func.params.join(", ") + ")",
+                    pos: { sl: 1, sc: 1 },
+                    displayPos: { sl: 1, sc: 1 }
+                });
+            });
+
+            _.forEach(ev.data.results.classes, function(c) {
+                var itemssub = [];
+
+                _.forEach(c.functions, function(func) {
+                    itemssub.push({
+                        icon: "method2",
+                        name: func.name + "(" + func.params.join(", ") + ")",
+                        pos: { sl: 1, sc: 1 },
+                        displayPos: { sl: 1, sc: 1 }
+                    });
+                });
+
+                _.forEach(c.attributes, function(attr) {
+                    itemssub.push({
+                        icon: "property",
+                        name: attr,
+                        pos: { sl: 1, sc: 1 },
+                        displayPos: { sl: 1, sc: 1 }
+                    });
+                });
+
+                items.push({
+                    icon: "c_cpp_class",
+                    name: c.name,
+                    pos: { sl: 1, sc: 1 },
+                    displayPos: { sl: 1, sc: 1 },
+                    items: itemssub
+                });
+            });
+
+            return callback({ items: items});
+        });
+
+        // send the data to the server
+        completer.sender.emit("_outline", {
             id: cId
         });
     };
