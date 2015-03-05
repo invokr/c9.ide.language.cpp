@@ -246,15 +246,20 @@ define(function(require, exports, module) {
         // @todo: handle enum elements
         var parseAst = function (ast, item) {
             _.forEach(ast, function (ele) {
+                var toPush = {
+                    pos: { sl: ele.loc_row - 1, sc: ele.loc_col - 1 },
+                    displayPos: { sl: ele.loc_row - 1, sc: ele.loc_col - 1 },
+                    items: [],
+                    name: ele.name
+                };
+
                 switch (ele.cursor) {
                     // includes, no subs
                     case completion_type.include_t:
-                        item.items.push({
-                            icon: "c_cpp_include",
-                            name: "&lt;"+ele.name+"&gt;",
-                            pos: { sl: ele.loc_row, sc: ele.loc_col },
-                            displayPos: { ele.loc_row, sc: ele.loc_col }
-                        });
+                        toPush.icon = "c_cpp_include";
+                        toPush.name = "&lt;"+ele.name+"&gt;";
+
+                        item.items.push(toPush);
                         break;
 
                     // classes, subs maybe other classes, attributes or functions
@@ -262,42 +267,27 @@ define(function(require, exports, module) {
                     case completion_type.union_t:
                     case completion_type.struct_t:
                     case completion_type.enum_t: {
-                        var it = {
-                            icon: "c_cpp_class",
-                            name: ele.name,
-                            pos: { ele.loc_row, sc: ele.loc_col },
-                            displayPos: { ele.loc_row, sc: ele.loc_col },
-                            items: []
-                        };
-
-                        parseAst(ele.children, it);
-                        item.items.push(it);
+                        toPush.icon = "c_cpp_class";
+                        
+                        parseAst(ele.children, toPush);
+                        item.items.push(toPush);
                     } break;
 
                     // attributes, no subs
                     case completion_type.enum_static_t:
                     case completion_type.attribute_t:
-                        item.items.push({
-                            icon: "property",
-                            name: ele.name,
-                            pos: { ele.loc_row, sc: ele.loc_col },
-                            displayPos: { ele.loc_row, sc: ele.loc_col }
-                        });
+                        toPush.icon = "property";
+                        item.items.push(toPush);
                         break;
 
                     // functions and methods
                     case completion_type.function_t:
                     case completion_type.method_t: {
-                        var it = {
-                            icon: "method2",
-                            name: ele.name + astParam(ele.children),
-                            pos: { sl: 1, sc: 1 },
-                            displayPos: { sl: 1, sc: 1 },
-                            items: []
-                        };
-
-                        parseAst(ele.children, it);
-                        item.items.push(it);
+                        toPush.icon = "method2";
+                        toPush.name = ele.name + astParam(ele.children);
+                        
+                        parseAst(ele.children, toPush);
+                        item.items.push(toPush);
                     } break;
                 }
             });
