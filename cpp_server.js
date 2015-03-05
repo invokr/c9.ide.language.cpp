@@ -25,47 +25,73 @@ module.exports = function (vfs, options, register) {
     };
 
     var clang_obj = null;
+    var clang_cache = {}; // caches ast and diagnosis for all files
 
     register(null, {
         // Should be called when the server is first invoked, do not call multiple times
-        load: function() {
+        load: function(cb) {
             myLog("[cpp_server load]");
             clang_obj = new clang_tool.object;
+
+            if (cb)
+                cb(false);
         },
 
         // Sets compiler arguments
-        setArgs: function(args) {
+        setArgs: function(args, cb) {
             myLog("[cpp_server setArgs]", args);
             clang_obj.setArgs(args);
+
+            if (cb)
+                cb(false);
         },
 
         // Adds / updates a file on the index
-        indexTouch: function(file) {
+        indexTouch: function(file, cb) {
             myLog("[cpp_server indexTouch]", file);
             clang_obj.indexTouch(file);
+
+            // cache diagnosis and ast for the file in the cache
+            clang_cache[file] = {
+                diag: clang_obj.fileDiagnose(file),
+                ast: clang_obj.fileAst(file)
+            };
+
+            if (cb)
+                cb(false);
         },
 
         // Add unsaved contents to index
-        indexTouchUnsaved: function(file, content) {
+        indexTouchUnsaved: function(file, content, cb) {
             myLog("[cpp_server indexTouchUnsaved]", file);
             clang_obj.indexTouchUnsaved(file, content);
+
+            if (cb)
+                cb(false);
         },
 
         // Returns memory usage for each file on the index
         indexStatus: function(cb) {
-            myLog("[cpp_server indexStatus]");
+            myLog("[cpp_server indexStatus]", clang_obj);
             cb(false, clang_obj.indexStatus());
         },
 
         // Clears the index [for a specifc file]
-        indexClear: function(file) {
+        indexClear: function(file, cb) {
             if (typeof(file) != "undefined") {
                 myLog("[cpp_server indexClear]", file);
                 clang_obj.indexClear(file);
+
+                if (typeof(clang_cache[file]) != "undefined")
+                    delete clang_cache[file];
             } else {
                 myLog("[cpp_server indexClear]");
                 clang_obj.indexClear();
+                clang_cache = {};
             }
+
+            if (cb)
+                cb(false);
         },
 
         // Generates file outline
@@ -77,7 +103,21 @@ module.exports = function (vfs, options, register) {
         // Returns diagnostic information
         fileDiagnose: function(file, cb) {
             myLog("[cpp_server fileDiagnose]", file);
-            cb(false, clang_obj.fileDiagnose(file));
+
+            if (typeof(clang_cache[file]) != "undefined")
+                cb(false, clang_cache[file].diag);
+            else
+                cb(false, []);
+        },
+
+        // Returns ast
+        fileAst: function(file, cb) {
+            myLog("[cpp_server fileAst]", file);
+
+            if (typeof(clang_cache[file]) != "undefined")
+                cb(false, clang_cache[file].ast);
+            else
+                cb(false, {});
         },
 
         // Returns potential code completion candidates at a specific location
