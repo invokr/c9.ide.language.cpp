@@ -57,16 +57,18 @@ define(function(require, exports, module) {
                 }
 
                 clang_tool = plugin;
-                clang_tool.load();
-                clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
+                clang_tool.load(function (err) {
+                    clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
+                });
             });
         }
 
         c9.on("connect", loadClangTool);
         c9.on("disconnect", function() {
             if (clang_tool) {
-                clang_tool.indexClear();
-                clang_tool = null;
+                clang_tool.indexClear(function() {
+                    clang_tool = null;
+                });
             }
         });
 
@@ -99,7 +101,8 @@ define(function(require, exports, module) {
                     return;
 
                 // add / update on index
-                clang_tool.indexTouch(basedir+ev.path);
+                if (clang_tool)
+                    clang_tool.indexTouch(basedir+ev.path);
             });
 
             // Automatically free memory of closed objects
@@ -125,12 +128,11 @@ define(function(require, exports, module) {
                 var value = tabManager.focussedTab.document.value;
                 var path = basedir+tabManager.focussedTab.path;
 
-                // add temporary data to index
-                clang_tool.indexTouchUnsaved(path, value);
-
-                // do the code completion
-                clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
-                    worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
+                // add temporary data to index and do code completion
+                clang_tool.indexTouchUnsaved(path, value, function () {
+                    clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
+                        worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
+                    });
                 });
             });
 
@@ -145,7 +147,6 @@ define(function(require, exports, module) {
                     });
 
                     worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
-                    //worker.emit("_diagnoseResult", {data: {id: event.data.id, results: [], path: path}});
                 });
             });
 
@@ -157,8 +158,8 @@ define(function(require, exports, module) {
                     return;
 
                 // generate outline
-                clang_tool.fileOutline(path, function(err, res) {
-                    worker.emit("_outlineResult", {data: {id: event.data.id, results: res}});
+                clang_tool.fileAst(path, function(err, res) {
+                    worker.emit("_outlineResult", {data: {id: event.data.id, ast: res.children}});
                 });
             });
         });
@@ -187,7 +188,7 @@ define(function(require, exports, module) {
                 settings.setDefaults("project/c_cpp", [
                     ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
                 ]);
-            }, plugin);
+            }, plugin); 
 
             // Listen to updates
             settings.on("project/c_cpp/@compilerArguments", function(value) {
@@ -197,7 +198,6 @@ define(function(require, exports, module) {
 
             // Add css
             ui.insertCss(require("text!./icons.css"), false, plugin);
-            console.log("Added css", options.staticPrefix, require("text!./icons.css"));
         });
 
         // Make sure the plugin is unloaded correctly so that cached translation units get purged
