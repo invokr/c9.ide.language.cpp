@@ -68,6 +68,16 @@ define(function(require, exports, module) {
                 clang_tool.indexClear(basedir+event.data.path);
         }
 
+        // Callback when a document is saved
+        function onDocumentSave(event) {
+            if (!is_c_cpp(event.path))
+                return;
+
+            // add / update on index
+            if (clang_tool)
+                clang_tool.indexTouch(basedir+ev.path);
+        }
+
         // Code completion
         function workerCompletion(event) {
             var value = tabManager.focussedTab.document.value;
@@ -125,7 +135,7 @@ define(function(require, exports, module) {
             worker = worker_;
             worker.on("documentOpened", onDocumentOpened);
             worker.on("documentClosed", onDocumentClosed);
-            save.on("afterSave", onDocumentOpened);
+            save.on("afterSave", onDocumentSave);
 
             //
             // Important:
