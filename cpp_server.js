@@ -31,10 +31,10 @@ module.exports = function (vfs, options, register) {
         // Should be called when the server is first invoked, do not call multiple times
         load: function(cb) {
             myLog("[cpp_server load]");
-            clang_obj = new clang_tool.object;
 
-            if (cb)
-                cb(false);
+            // connect clang
+            clang_obj = new clang_tool.object;
+            cb(false);
         },
 
         // Sets compiler arguments
