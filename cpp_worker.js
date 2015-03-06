@@ -109,7 +109,7 @@ define(function(require, exports, module) {
                 var r_meta = res.args.length ? "("+res.args.join(", ")+")" : null;
 
                 var r_icon = null;
-                var r_priority = 100;
+                var r_priority = 200 + (-res.priority);
                 switch (res.type) {
                     case completion_type.function_t:
                     case completion_type.method_t:
@@ -243,7 +243,6 @@ define(function(require, exports, module) {
         // recursive ast parser function
         // @todo: icon for class / union / struct enum
         // @todo: take access specifier into account (green = public, blue = protected, red = private)
-        // @todo: handle enum elements
         var parseAst = function (ast, item) {
             _.forEach(ast, function (ele) {
                 var toPush = {
@@ -253,12 +252,40 @@ define(function(require, exports, module) {
                     name: ele.name
                 };
 
+                // only handles icons
+                switch (ele.cursor) {
+                    case completion_type.include_t:
+                        toPush.icon = "c_cpp_include";
+                        break;
+                    case completion_type.class_t:
+                        toPush.icon = "c_cpp_class";
+                        break;
+                    case completion_type.union_t:
+                        toPush.icon = "c_cpp_union";
+                        break;
+                    case completion_type.struct_t:
+                        toPush.icon = "c_cpp_struct";
+                        break;
+                    case completion_type.enum_t:
+                        toPush.icon = "c_cpp_enum";
+                        break;
+                    case completion_type.function_t:
+                    case completion_type.method_t:
+                        toPush.icon = "method";
+                        break;
+                    case completion_type.enum_static_t:
+                    case completion_type.attribute_t:
+                        toPush.icon = "property";
+                    default:
+                        toPush.icon = "unkown2";
+                        break;
+                }
+
+                // names and the other stuff
                 switch (ele.cursor) {
                     // includes, no subs
                     case completion_type.include_t:
-                        toPush.icon = "c_cpp_include";
                         toPush.name = "&lt;"+ele.name+"&gt;";
-
                         item.items.push(toPush);
                         break;
 
@@ -267,8 +294,6 @@ define(function(require, exports, module) {
                     case completion_type.union_t:
                     case completion_type.struct_t:
                     case completion_type.enum_t: {
-                        toPush.icon = "c_cpp_class";
-                        
                         parseAst(ele.children, toPush);
                         item.items.push(toPush);
                     } break;
@@ -276,16 +301,13 @@ define(function(require, exports, module) {
                     // attributes, no subs
                     case completion_type.enum_static_t:
                     case completion_type.attribute_t:
-                        toPush.icon = "property";
                         item.items.push(toPush);
                         break;
 
                     // functions and methods
                     case completion_type.function_t:
                     case completion_type.method_t: {
-                        toPush.icon = "method2";
                         toPush.name = ele.name + astParam(ele.children);
-                        
                         parseAst(ele.children, toPush);
                         item.items.push(toPush);
                     } break;
