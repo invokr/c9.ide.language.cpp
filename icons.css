@@ -5,8 +5,43 @@
     background-size: 10px 10px;
 }
 
+.c_cpp_enum {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_enum.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
+
 .c_cpp_include {
     background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_include.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
+
+.c_cpp_macro {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_macro.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
+
+.c_cpp_struct {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_struct.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
+
+.c_cpp_typedef {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_typedef.png");
+    background-repeat: no-repeat;
+    background-position: 3px center;
+    background-size: 10px 10px;
+}
+
+.c_cpp_union {
+    background-image: url("/static/plugins/c9.ide.language.cpp/images/c_cpp_union.png");
     background-repeat: no-repeat;
     background-position: 3px center;
     background-size: 10px 10px;
