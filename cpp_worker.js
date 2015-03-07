@@ -8,7 +8,7 @@ define(function(require, exports, module) {
     var worker_util = require("plugins/c9.ide.language/worker_util");
     var _ = require("plugins/c9.nodeapi/lodash");
 
-    var completer = module.exports = Object.create(baseLanguageHandler);
+    var cpp_worker = module.exports = Object.create(baseLanguageHandler);
     var uId = 0;
 
     // different completion types
@@ -46,29 +46,29 @@ define(function(require, exports, module) {
     }
 
     // takes care of initial plugin registration
-    completer.init = function(callback) {
+    cpp_worker.init = function(callback) {
         return callback();
     };
 
     // check if we handle the language
-    completer.handlesLanguage = function(language) {
+    cpp_worker.handlesLanguage = function(language) {
         return (language === "c_cpp");
     };
 
     // do an initial parse to speed things up in the future
-    completer.onDocumentOpen = function (path, doc, oldPath, callback) {
-        completer.sender.emit("documentOpened", {path: path});
+    cpp_worker.onDocumentOpen = function (path, doc, oldPath, callback) {
+        cpp_worker.sender.emit("documentOpened", {path: path});
         return callback();
     };
 
     // send closing info
-    completer.onDocumentClose = function (path, callback) {
-        completer.sender.emit("documentClosed", {path: path});
+    cpp_worker.onDocumentClose = function (path, callback) {
+        cpp_worker.sender.emit("documentClosed", {path: path});
         return callback();
     };
 
     // code completion
-    completer.complete = function(doc, fullAst, pos, currentNode, callback) {
+    cpp_worker.complete = function(doc, fullAst, pos, currentNode, callback) {
         // returns true if one strings is a subsequent match to another
         var filter_match = function (search, text) {
             var idx = 0;
@@ -155,12 +155,12 @@ define(function(require, exports, module) {
         }
 
         // cb when code completion is done
-        completer.sender.on("_completionResult", function tmp(event) {
+        cpp_worker.sender.on("_completionResult", function tmp(event) {
             if (event.data.id != cId)
                 return;
 
             // unregister this cb
-            completer.sender.off("_completionResult", tmp);
+            cpp_worker.sender.off("_completionResult", tmp);
 
             last_results = event.data.results
             last_pos = pos;
@@ -170,23 +170,23 @@ define(function(require, exports, module) {
         });
 
         // send completion data to the server
-        completer.sender.emit("_completion", {
+        cpp_worker.sender.emit("_completion", {
             pos: pos,
             id: cId
         });
     };
 
     // Propagate clang diagnostics
-    completer.analyze = function(value, ast, callback) {
+    cpp_worker.analyze = function(value, ast, callback) {
         // create a unique numeric id to identify correct callback relationships
         var cId = ++uId;
 
         // wait for the result and invoke the complete.callback function
-        completer.sender.on("_diagnoseResult", function invoTmp(ev) {
+        cpp_worker.sender.on("_diagnoseResult", function invoTmp(ev) {
             if (ev.data.id != cId)
                 return;
             // unregister this cb
-            completer.sender.off("_diagnoseResult", invoTmp);
+            cpp_worker.sender.off("_diagnoseResult", invoTmp);
 
             var results = []; // results to return
             _.forEach(ev.data.results, function(res) {
@@ -218,12 +218,12 @@ define(function(require, exports, module) {
         });
 
         // send the completion data to the server
-        completer.sender.emit("_diagnose", {
+        cpp_worker.sender.emit("_diagnose", {
             id: cId
         });
     };
 
-    completer.outline = function(doc, fullAst, callback) {
+    cpp_worker.outline = function(doc, fullAst, callback) {
         // create a unique numeric id to identify correct callback relationships
         var cId = ++uId;
 
@@ -315,11 +315,11 @@ define(function(require, exports, module) {
             });
         };
 
-        completer.sender.on("_outlineResult", function invoTmp(ev) {
+        cpp_worker.sender.on("_outlineResult", function invoTmp(ev) {
             if (ev.data.id != cId)
                 return;
 
-            completer.sender.off("_outlineResult", invoTmp);
+            cpp_worker.sender.off("_outlineResult", invoTmp);
             var data = {items:[]};
             parseAst(ev.data.ast, data);
 
@@ -327,8 +327,12 @@ define(function(require, exports, module) {
         });
 
         // send the data to the server
-        completer.sender.emit("_outline", {
+        cpp_worker.sender.emit("_outline", {
             id: cId
         });
+    };
+    
+    cpp_worker.jumpToDefinition = function(doc, fullAst, pos, currentNode, callback) {
+        callback();
     };
 });
