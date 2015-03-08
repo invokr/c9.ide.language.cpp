@@ -75,7 +75,7 @@ define(function(require, exports, module) {
 
             // add / update on index
             if (clang_tool)
-                clang_tool.indexTouch(basedir+ev.path);
+                clang_tool.indexTouch(basedir+event.path);
         }
 
         // Code completion
@@ -125,7 +125,10 @@ define(function(require, exports, module) {
         }
 
         // Register our language handler
-        language.registerLanguageHandler('plugins/c9.ide.language.cpp/cpp_worker', function(err, worker_) {
+        var path = options.packagePath;
+        path = path.substr(0, path.lastIndexOf("/") + 1) + "cpp_worker";
+        
+        language.registerLanguageHandler(path, function(err, worker_) {
             if (err) {
                 errorHandler.reportError(err);
                 return showError("Could not load cpp language worker: " + (err.message | err));
