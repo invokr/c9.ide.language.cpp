@@ -4,7 +4,7 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "settings", "preferences", "format", "proc", "c9", "tabManager"
+        "Plugin", "settings", "preferences", "format", "proc", "c9", "tabManager", "save"
     ];
     main.provides = ["cpp.format"];
     return main;
@@ -19,6 +19,7 @@ define(function(require, exports, module) {
         var proc = imports.proc;
         var c9 = imports.c9;
         var tabManager = imports.tabManager;
+        var save = imports.save;
 
         // Initialize the plugin
         plugin.on("load", function() {
@@ -54,9 +55,17 @@ define(function(require, exports, module) {
                     return;
                 }
 
-                tabManager.focussedTab.document.value = stdout;
+                // Save before format
+                save.save(tabManager.focussedTab, {}, function(err) {
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+
+                    tabManager.focussedTab.document.value = stdout;
+                });
             });
-            
+
             return true;
         }
 
