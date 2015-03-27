@@ -45,6 +45,5 @@ fi
 
 # If we have clang-format, execute it
 if [ -e ${LINK} ]; then
-    echo "${LINK} -style=$1 -lines=$2 $3"
-    ${LINK} -style=$1 -lines=$2 $3
+    ${LINK} -style="$1" $3
 fi
