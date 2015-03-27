@@ -24,22 +24,22 @@ define(function(require, exports, module) {
         // Identifier, Name, Type, Default, [range|values]
         var clang_settings = [
             ["AccessModifierOffset", "Access Modifier Offset", "int", 0, [0, 1024]],
-            ["AlignAfterOpenBracket", "Align after Open Bracket", "bool", false],
+            // ["AlignAfterOpenBracket", "Align after Open Bracket", "bool", false],
             ["AlignEscapedNewlinesLeft", "Align escaped Newlines left", "bool", true],
-            ["AlignOperands", "Align Operands", "bool", false],
+            // ["AlignOperands", "Align Operands", "bool", false],
             ["AlignTrailingComments", "Align trailing Comments", "bool", true],
             // ["AllowAllParametersOfDeclarationOnNextLine", "Allow all ", "", 0],
             ["AllowShortBlocksOnASingleLine", "Allow single line Blocks", "bool", true],
-            ["AllowShortCaseLabelsOnASingleLine", "Allow single line Labels", "bool", true],
+            // ["AllowShortCaseLabelsOnASingleLine", "Allow single line Labels", "bool", true],
             ["AllowShortFunctionsOnASingleLine", "Allow single line Functions", "enum", "Inline", ["None", "Inline", "Empty", "All"]],
             ["AllowShortIfStatementsOnASingleLine", "Allow single line If", "bool", true],
             ["AllowShortLoopsOnASingleLine", "Allow single line Loops", "bool", true],
-            ["AlwaysBreakAfterDefinitionReturnType", "Allow Break after Return", "bool", true],
+            // ["AlwaysBreakAfterDefinitionReturnType", "Allow Break after Return", "bool", true],
             ["AlwaysBreakBeforeMultilineStrings", "Allow Break before Multiline Strings", "bool", true],
             ["AlwaysBreakTemplateDeclarations", "Always Break Template Declerations", "bool", false],
-            ["BinPackArguments", "Pack Arguments", "bool", false],
+            // ["BinPackArguments", "Pack Arguments", "bool", false],
             ["BinPackParameters", "Pack Parameters", "bool", false],
-            ["BreakBeforeBinaryOperators", "Break before Operators", "enum", "None", ["None", ["NonAssignment", "Non-Assignment"], "All"]],
+            ["BreakBeforeBinaryOperators", "Break before Operators", "bool", false],
             ["BreakBeforeBraces", "Break before Braces", "enum", "Attach", ["Attach", "Linux", "Stroustrup", "Allman", "GNU"]],
             ["BreakBeforeTernaryOperators", "Break before ternary Operators", "bool", false],
             ["BreakConstructorInitializersBeforeComma", "Break Constructor Initializer before Comma", "bool", false],
@@ -51,7 +51,7 @@ define(function(require, exports, module) {
             ["DerivePointerAlignment", "Derive Pointer Alignment", "bool", true],
             // ["DisableFormat", "", "", 0],
             // ["ExperimentalAutoDetectBinPacking", "", "", 0],
-            ["ForEachMacros", "For-Each Macros", "string", "BOOST_FOREACH"],
+            // ["ForEachMacros", "For-Each Macros", "string", "BOOST_FOREACH"],
             ["IndentCaseLabels", "Indent Case Labels", "bool", false],
             ["IndentWidth", "Indent Width", "int", 4, [0, 1024]],
             ["IndentWrappedFunctionNames", "Indet Wrapped Function Names", "bool", true],
@@ -63,21 +63,24 @@ define(function(require, exports, module) {
             ["SpaceBeforeAssignmentOperators", "Space before assignment", "bool", true],
             ["SpaceBeforeParens", "Space before Parens", "enum", "ControlStatements", ["Always", ["ControlStatements", "After Control-Statement"], "Never"]],
             ["SpaceInEmptyParentheses", "Spaces in Empty Parentheses", "bool", false],
-            ["SpacesBeforeTrailingComments", "Spaces before Trailing Comments", "bool", true],
+            ["SpacesBeforeTrailingComments", "Spaces before Trailing Comments", "int", 0, [0, 1024]],
             ["SpacesInAngles", "Spaces in Angle-Brackets", "bool", true],
             ["SpacesInCStyleCastParentheses", "Spaces in CStyle Cast Parentheses", "bool", false],
             ["SpacesInContainerLiterals", "Spaces in Container Literals", "bool", false],
             ["SpacesInParentheses", "Spaces in Parentheses", "bool", true],
-            ["SpacesInSquareBrackets", "Spaces in Square-Brackets", "bool", false],
+            //["SpacesInSquareBrackets", "Spaces in Square-Brackets", "bool", false],
             ["Standard", "C++ Standard", "enum", "Cpp11", ["Auto", ["Cpp03", "C++ 03"], ["Cpp11", "C++ 11"]]],
             ["TabWidth", "Tab Width", "int", 4, [0, 1024]],
             ["UseTab", "Use Tabs", "enum", "Never", ["Always", ["ForIndentation", "For Indentation"], "Never"]]
         ];
 
+
+        var current_settings = {}; // Current actual settings
+
         // Initialize the plugin
         plugin.on("load", function() {
             // add formatter
-            format.addFormatter("C / C++ (clang_format)", "c_cpp", plugin);
+            format.addFormatter("C++ (clang_format)", "c_cpp", plugin);
             format.on("format", function(e) {
                 if (e.mode == "c_cpp")
                     return formatCode(e.editor, e.mode);
@@ -107,7 +110,6 @@ define(function(require, exports, module) {
                 }
             };
             var myDefaults = [["CodingStyle", "None"]];
-            var current_settings = {}; // Current actual settings
 
             var position = 100;
             _.each(clang_settings, function (entry) {
@@ -177,6 +179,18 @@ define(function(require, exports, module) {
             format = null;
         });
 
+        function getSettings() {
+            var ret = "{";
+            _.each(clang_settings, function(val) {
+                var v = settings.get("user/format/clang/@"+val[0]);
+
+                if (v != "")
+                    ret += val[0]+": "+settings.get("user/format/clang/@"+val[0])+", ";
+            });
+
+            return ret.substr(0, ret.length - 2)+"}";
+        }
+
         function formatCode(editor) {
             var ace = editor.ace;
             var sel = ace.selection;
@@ -187,12 +201,9 @@ define(function(require, exports, module) {
             var lines = (range.start.row+1) + ":" + (range.end.row+1);
             var path  = c9.workspaceDir+tabManager.focussedTab.path;
 
-            // Writing 21 events to listen to updates doesn't seem to great
-            var format_settings = {};
-
             // Execute clang_format.sh script
             proc.execFile("/usr/home/dev/.c9/c9sdk/plugins/c9.ide.language.cpp/clang_format.sh", {
-                args: ["google", lines, path],
+                args: [getSettings(), lines, path],
                 cwd: "/"
             }, function(err, stdout, stderr) {
                 if (err) {
@@ -218,7 +229,8 @@ define(function(require, exports, module) {
         // - Allow setting clang_format_path from the installer
         // - Allow loading specific configs by path
         plugin.freezePublicAPI({
-            formatCode: formatCode
+            formatCode: formatCode,
+            clangSettingsString: getSettings
         });
 
         // Registers our plugin with C9
