@@ -4,7 +4,8 @@
  */
 define(function(require, exports, module) {
     main.consumes = [
-        "Plugin", "settings", "preferences", "format", "proc", "c9", "tabManager", "save"
+        "Plugin", "settings", "preferences", "format", "proc", "c9", "tabManager", "save",
+        "error_handler", "dialog.error"
     ];
     main.provides = ["cpp.format"];
     return main;
@@ -20,6 +21,8 @@ define(function(require, exports, module) {
         var c9 = imports.c9;
         var tabManager = imports.tabManager;
         var save = imports.save;
+        var errorHandler = imports.error_handler;
+        var showError = imports["dialog.error"].show;
 
         // Identifier, Name, Type, Default, [range|values]
         var clang_settings = [
@@ -116,11 +119,6 @@ define(function(require, exports, module) {
                 // Add default
                 myDefaults.push([entry[0], entry[3]]);
 
-                // Listen for update
-                settings.on("user/format/clang/@"+entry[0], function(value) {
-                    current_settings[entry[0]] = value;
-                }, plugin);
-
                 // Add actual preferences
                 switch (entry[2]) {
                     case "bool":
@@ -194,7 +192,6 @@ define(function(require, exports, module) {
         function formatCode(editor) {
             var ace = editor.ace;
             var sel = ace.selection;
-            var session = ace.session;
             var range = sel.getRange();
 
             // Lines
@@ -207,19 +204,30 @@ define(function(require, exports, module) {
                 cwd: "/"
             }, function(err, stdout, stderr) {
                 if (err) {
-                    console.log(err);
-                    return;
+                    errorHandler.reportError(err);
+                    return showError("[c9.ide.language.cpp.format] Can't run wrapper script: " + (err.message | err));
                 }
 
-                // Save before format
-                save.save(tabManager.focussedTab, {}, function(err) {
-                    if (err) {
-                        console.log(err);
-                        return;
-                    }
+                if (stderr.length > 1) {
+                    // Some invalid options or other stuff
+                    // @todo build own binary that is backwards compatible and doesn't choke up
+                    errorHandler.reportError(stderr);
+                    return showError("[c9.ide.language.cpp.format] Incompatible clang-format binary: " + (err.message | err));
+                } else if (stdout.length > 1) {
+                    // We have formatted the content, go replace
+                    save.save(tabManager.focussedTab, {}, function(err) {
+                        if (err) {
+                            errorHandler.reportError(stderr);
+                            return showError("[c9.ide.language.cpp.format] Error saving document: " + (err.message | err));
+                        }
 
-                    tabManager.focussedTab.document.value = stdout;
-                });
+                        tabManager.focussedTab.document.value = stdout;
+                    });
+                } else {
+                    // Clang-Format binary could not be found
+                    errorHandler.reportError("Clang-Format not installed or found.");
+                    return showError("[c9.ide.language.cpp.format] Clang-Format not installed or found.");
+                }
             });
 
             return true;
