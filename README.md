@@ -40,7 +40,7 @@ Installation on a local c9v3 instance
  * `cd <c9-sdk-folder>`
  * `npm install clang_tool`
    * If the above fails, make sure libllvm and libclang are installed
-   * Clone the [clang-autocomplete repository](https://github.com/invokr/clang-autocomplete): `git clone <r> node_modules/clang-autocomplete`
+   * Clone the [clang_tool repository](https://github.com/invokr/clang_tool): `git clone <r> node_modules/clang_tool`
    * Check if the correct include path is set in `bindings.gyp`
    * Run `node-gyp configure && node-gyp build`
  * Add the plugin to `<c9-sdk-foler>/configs/client-default.js` (e.g. in line 289)
@@ -51,13 +51,13 @@ Installation on c9.io
 Run the following in `~` (via the c9 terminal):
 
     # Install native dependencies
-    sudo apt-get install llvm-3.5 llvm-3.5-dev lvm-3.5-runtime libclang-3.5-dev libclang1-3.5
+    sudo apt-get install llvm-3.5 llvm-3.5-dev lvm-3.5-runtime libclang-3.5-dev libclang1-3.5 clang-format-3.5
 
     # Install clang_tool
     npm install clang_tool
 
     # Install the plugin
-    mkdir .c9/plugins && git clone https://github.com/invokr/c9.ide.language.cpp .c9/plugins/c9.ide.language.cpp
+    mkdir ~/.c9/plugins && git clone https://github.com/invokr/c9.ide.language.cpp ~/.c9/plugins/c9.ide.language.cpp
 
     # Start cloud9 in debug mode to activate the plugin
     https://ide.c9.io/[username]/[project]?sdk=1&debug=2
