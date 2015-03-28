@@ -6,11 +6,11 @@
 # Wrapper script around clang-format
 #
 # Usage:
-# ./clang_format.sh (style) (lines) (file)
+# ./clang_format.sh (style) (file)
 #
 # Example:
-# ./clang_format.sh Google 1:9999999 test.cpp
-# ./clang_format.sh "{key: value, ...}" 1:9999999 test.cpp
+# ./clang_format.sh Google test.cpp
+# ./clang_format.sh "{key: value, ...}" test.cpp
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 LINK="$DIR/clang_format"
@@ -45,6 +45,12 @@ if [ ! -e ${LINK} ]; then
 fi
 
 # If we have clang-format, execute it
+# $0 / $1 due to bash behavior when running the script with -c
 if [ -e ${LINK} ]; then
-    ${LINK} -style="$1" $3
+    if [ "$#" -ne 3 ]; then
+        ${LINK} -style="$0" $1
+    else
+        ${LINK} -style="$1" $2
+    fi
+    exit 0
 fi
