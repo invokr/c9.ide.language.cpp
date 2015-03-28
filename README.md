@@ -8,6 +8,7 @@ These features are currently implemented:
  * Code completion
  * Linting and Diagnostics
  * File Outline (Classes, Functions, Includes)
+ * Code formatting (Using clang-format, 3.5 min required)
 
 These features are planned:
  
