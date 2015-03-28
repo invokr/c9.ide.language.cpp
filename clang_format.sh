@@ -24,6 +24,7 @@ if [ ! -e ${LINK} ]; then
         "/usr/local/bin/clang-format"
         "/usr/local/llvm34/bin/clang-format"
         "/usr/local/llvm35/bin/clang-format"
+        "/usr/bin/clang-format-3.5"
     )
 
     # Try to find binary
