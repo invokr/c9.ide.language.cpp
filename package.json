@@ -1,7 +1,7 @@
 {
     "name": "c9.ide.language.cpp",
     "description": "Cloud9 C/C++ language plugin",
-    "version": "0.9.3",
+    "version": "0.9.4",
     "author": "Robin Dietrich",
     "contributors": [],
     "repository": {
