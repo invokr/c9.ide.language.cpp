@@ -71,14 +71,13 @@ define(function(require, exports, module) {
             ["SpacesInCStyleCastParentheses", "Spaces in CStyle Cast Parentheses", "bool", false],
             ["SpacesInContainerLiterals", "Spaces in Container Literals", "bool", false],
             ["SpacesInParentheses", "Spaces in Parentheses", "bool", true],
-            //["SpacesInSquareBrackets", "Spaces in Square-Brackets", "bool", false],
+            // ["SpacesInSquareBrackets", "Spaces in Square-Brackets", "bool", false],
             ["Standard", "C++ Standard", "enum", "Cpp11", ["Auto", ["Cpp03", "C++ 03"], ["Cpp11", "C++ 11"]]],
             ["TabWidth", "Tab Width", "int", 4, [0, 1024]],
             ["UseTab", "Use Tabs", "enum", "Never", ["Always", ["ForIndentation", "For Indentation"], "Never"]]
         ];
 
-
-        var current_settings = {}; // Current actual settings
+        var script = require("text!./clang_format.sh"); // clang-format wrapper
 
         // Initialize the plugin
         plugin.on("load", function() {
@@ -195,13 +194,13 @@ define(function(require, exports, module) {
             var range = sel.getRange();
 
             // Lines
-            var lines = (range.start.row+1) + ":" + (range.end.row+1);
             var path  = c9.workspaceDir+tabManager.focussedTab.path;
 
             // Execute clang_format.sh script
-            proc.execFile("/usr/home/dev/.c9/c9sdk/plugins/c9.ide.language.cpp/clang_format.sh", {
-                args: [getSettings(), lines, path],
-                cwd: "/"
+            // See https://groups.google.com/forum/#!topic/cloud9-sdk/FuFkFH78cew
+            proc.execFile("bash", {
+                args: ["-c", script, getSettings(), path],
+                cwd: "plugins/c9.ide.language.cpp"
             }, function(err, stdout, stderr) {
                 if (err) {
                     errorHandler.reportError(err);
