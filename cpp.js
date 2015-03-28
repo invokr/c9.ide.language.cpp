@@ -127,7 +127,7 @@ define(function(require, exports, module) {
         // Register our language handler
         var path = options.packagePath;
         path = path.substr(0, path.lastIndexOf("/") + 1) + "cpp_worker";
-        
+
         language.registerLanguageHandler(path, function(err, worker_) {
             if (err) {
                 errorHandler.reportError(err);
@@ -161,14 +161,18 @@ define(function(require, exports, module) {
                 code: require("text!./cpp_server.js"),
                 redefine: !clang_tool
             }, function(err, plugin) {
-                if (err)
-                    return alert("[c9.ide.language.cpp] Error initializing server: ", err);
+                if (err) {
+                    errorHandler.reportError(err);
+                    return showError("[c9.ide.language.cpp] Error initializing server: " + (err.message | err));
+                }
 
                 // connect clang
                 clang_tool = plugin;
                 clang_tool.load(function (err) {
-                    if (err)
-                        return alert("[c9.ide.language.cpp] Unable to initialize cpp_server" + err.toString());
+                    if (err) {
+                        errorHandler.reportError(err);
+                        return showError("[c9.ide.language.cpp] Unable to load clang_tool: " + (err.message | err));
+                    }
 
                     clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
                 });
@@ -180,7 +184,7 @@ define(function(require, exports, module) {
             if (clang_tool) {
                 clang_tool.indexClear(function() {
                     clang_tool = null;
-                })
+                });
             }
         }
 
