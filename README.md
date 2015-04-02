@@ -8,15 +8,14 @@ These features are currently implemented:
  * Code completion
  * Linting and Diagnostics
  * File Outline (Classes, Functions, Includes)
- * Code formatting (Using clang-format, 3.5 min required)
 
 These features are planned:
- 
+
  * Jump to Definition / Declaration
  * Full Clang-AST to JS converter (including documentation blocks)
  * Type under cursor
  * auto / typename / decltype Type resolution under cursor
- * Better Icons / Better Outline support
+ * Better Icons
 
 Code completion and linting are implemented using clang's libclang-c bindings.
 The initial parse of each translation unit (.c, .h) can take up to one second,
@@ -24,6 +23,8 @@ depending on the number and complexity of additional files to parse.
 
 Time for subsequent parses is greatly improved due to the build-in cache.
 
+Moved into seperate Plugin:
+  * [Code formatting](https://github.com/invokr/c9.ide.format.clang)
 
 Requirements
 ------------
