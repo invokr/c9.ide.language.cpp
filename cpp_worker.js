@@ -277,7 +277,7 @@ define(function(require, exports, module) {
                     case completion_type.attribute_t:
                         toPush.icon = "property";
                     default:
-                        toPush.icon = "unkown2";
+                        toPush.icon = "property"; // use property, in 99.9_% i'ts an enum member
                         break;
                 }
 
@@ -331,7 +331,7 @@ define(function(require, exports, module) {
             id: cId
         });
     };
-    
+
     cpp_worker.jumpToDefinition = function(doc, fullAst, pos, currentNode, callback) {
         callback();
     };
