@@ -6,7 +6,7 @@ define(function(require, exports, module) {
     main.consumes = [
         "Plugin", "language", "ext", "tabManager", "c9", "save",
         "settings", "preferences", "ui", "collab", "collab.connect",
-        "error_handler", "dialog.error"
+        "error_handler", "dialog.error", "installer"
     ];
     main.provides = ["cpp"];
     return main;
@@ -42,11 +42,52 @@ define(function(require, exports, module) {
         var collabConnect = imports["collab.connect"];
         var errorHandler = imports.error_handler;
         var showError = imports["dialog.error"].show;
+        var installer = imports.installer;
+        var emit = plugin.getEmitter();
 
         // constants and services used in the plugin
         var basedir = c9.workspaceDir;  // Use this to get the full file path for clang_tool
         var clang_tool = null;          // Service side clang_tool component
         var worker = null;              // Language worker
+
+        // for call throttling
+        var pendingServerCall = null;
+        var lastServerCall = Date.now();
+        var callInterval = 1000;
+
+        // make sure all deps are installed
+        installer.createSession("c9.ide.language.cpp", require("./install"));
+
+        // Calls a clang_remote function, uses rate limitting
+        function callRemoteLimited(fcn, params) {
+            setupServerFcn();
+
+            // Initiates a server call
+            function setupServerFcn(tries = 0) {
+                var waiting = lastServerCall + callInterval - Date.now();
+                if (waiting > 0) {
+                    // only set pending on first try
+                    if (tries == 0)
+                        pendingServerCall = setupServerFcn;
+
+                    setTimeout(setupServerFcn, waiting, ++tries);
+                } else {
+                    //
+                    if (pendingServerCall !== setupServerFcn && pendingServerCall != null) {
+                    } else {
+                        pendingServerCall = null; // reset our own fcn
+                        lastServerCall = Date.now();
+                        plugin.once("initServer", invokeServerFcn);
+                    }
+                }
+            }
+
+            // Invokes the actual server function
+            function invokeServerFcn() {
+                if (clang_tool)
+                    clang_tool[fcn].apply(clang_tool, params);
+            }
+        }
 
         // Callback when a new document is opened
         //  - Adds new files to the index to enable faster completion
@@ -87,28 +128,41 @@ define(function(require, exports, module) {
                 return worker.emit("_completionResult", {data: {id: event.data.id, results: []}});
 
             // add temporary data to index and do code completion
-            clang_tool.indexTouchUnsaved(path, value, function () {
+            callRemoteLimited("indexTouchUnsaved", [path, value, function () {
+                clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
+                    worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
+                })}
+            ]);
+
+            /*clang_tool.indexTouchUnsaved(path, value, function () {
                 clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
                     worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
                 });
-            });
+            });*/
         }
 
         // Code diagnosics
         function workerAnalysis(event) {
-            var value = tabManager.focussedTab.document.value;
             var path = basedir+tabManager.focussedTab.path;
 
             if (!clang_tool)
                 return worker.emit("_diagnoseResult", {data: {id: event.data.id, results: []}});
 
-            clang_tool.fileDiagnose(path, function(err, res) {
+            callRemoteLimited("fileDiagnose", [path, function(err, res) {
                 res = _.filter(res, function(r) {
                     return r.file == path;
                 });
 
                 worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
-            });
+            }]);
+
+            /*clang_tool.fileDiagnose(path, function(err, res) {
+                res = _.filter(res, function(r) {
+                    return r.file == path;
+                });
+
+                worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
+            });*/
         }
 
         // AST to outline conversion
@@ -175,6 +229,7 @@ define(function(require, exports, module) {
                     }
 
                     clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
+                    emit.sticky("initServer");
                 });
             });
         }
@@ -233,6 +288,9 @@ define(function(require, exports, module) {
                 clang_tool.unload();
                 clang_tool = null;
                 worker = null;
+
+                pendingServerCall = null;
+                lastServerCall = 0;
             }
         });
 
