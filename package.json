@@ -1,7 +1,7 @@
 {
     "name": "c9.ide.language.cpp",
     "description": "Cloud9 C/C++ language plugin",
-    "version": "0.12.0",
+    "version": "0.14.0",
     "author": "Robin Dietrich",
     "contributors": [],
     "repository": {
@@ -9,7 +9,7 @@
         "url": "http://github.com/invokr/c9.ide.language.cpp.git"
     },
     "installer": {
-        "version": "0.12.0",
+        "version": "0.14.0",
         "main": "install.js",
     },
     "plugins": {
