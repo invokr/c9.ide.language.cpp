@@ -26,6 +26,8 @@ Time for subsequent parses is greatly improved due to the build-in cache.
 Moved into seperate Plugin:
   * [Code formatting](https://github.com/invokr/c9.ide.format.clang)
 
+![Image](https://raw.github.com/invokr/c9.ide.language.cpp/master/screenshot.png)
+
 Requirements
 ------------
 
