@@ -21,6 +21,15 @@ module.exports = function(session, options){
         });
     }
 
+    // clang_tool npm package
+    session.install({
+        "name": "clang_tool",
+        "description": "Native nodejs libclang bindings",
+        "cwd": "~/.c9"
+    }, {
+        "npm": "clang_tool"
+    });
+
     // Show the installation screen
     session.start();
 };
