@@ -40,7 +40,7 @@ Installation on a local c9v3 instance
  * `cd <c9-sdk-folder>`
  * `npm install clang_tool`
    * If the above fails, make sure libllvm and libclang are installed
-   * Clone the [clang_tool repository](https://github.com/invokr/clang_tool): `git clone <r> node_modules/clang_tool`
+   * Clone the [clang_tool repository](https://github.com/invokr/clang-tool-node): `git clone <r> node_modules/clang_tool`
    * Check if the correct include path is set in `bindings.gyp`
    * Run `node-gyp configure && node-gyp build`
  * Add the plugin to `<c9-sdk-foler>/configs/client-default.js` (e.g. in line 289)
