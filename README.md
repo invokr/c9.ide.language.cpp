@@ -23,9 +23,6 @@ depending on the number and complexity of additional files to parse.
 
 Time for subsequent parses is greatly improved due to the build-in cache.
 
-Moved into seperate Plugin:
-  * [Code formatting](https://github.com/invokr/c9.ide.format.clang)
-
 ![Image](https://raw.github.com/invokr/c9.ide.language.cpp/master/screenshot.png)
 
 Requirements
@@ -47,6 +44,8 @@ Installation on a local c9v3 instance
    * Check if the correct include path is set in `bindings.gyp`
    * Run `node-gyp configure && node-gyp build`
  * Add the plugin to `<c9-sdk-foler>/configs/client-default.js` (e.g. in line 289)
+
+The following packages are necessary for debian jessie: `llvm-3.5`, `clang-3.5`, `libclang-3.5-dev`
 
 Installation on c9.io
 ---------------------
