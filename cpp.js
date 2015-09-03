@@ -60,10 +60,11 @@ define(function(require, exports, module) {
 
         // Calls a clang_remote function, uses rate limitting
         function callRemoteLimited(fcn, params) {
+            var tries = 0;
             setupServerFcn();
 
             // Initiates a server call
-            function setupServerFcn(tries = 0) {
+            function setupServerFcn() {
                 var waiting = lastServerCall + callInterval - Date.now();
                 if (waiting > 0) {
                     // only set pending on first try
