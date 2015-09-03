@@ -2,7 +2,7 @@
  * Does server-side code completion using the clang-autocomplete plugin
  *
  * @copyright 2015, Robin Dietrich
- * @license AGPLv3 <http://www.gnu.org/licenses/agpl.html>
+ * @license MIT
  */
 
 // Server side version of our code completion module

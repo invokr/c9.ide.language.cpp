@@ -1,6 +1,6 @@
 /**
  * @copyright 2015, Robin Dietrich
- * @license AGPLv3 <http://www.gnu.org/licenses/agpl.html>
+ * @license MIT
  */
 define(function(require, exports, module) {
     main.consumes = [

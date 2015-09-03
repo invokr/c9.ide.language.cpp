@@ -67,4 +67,4 @@ Run the following in `~` (via the c9 terminal):
 License
 -------
 
-c9.ide.language.cpp is licensed under the AGPL version 3
+c9.ide.language.cpp is licensed under the MIT
