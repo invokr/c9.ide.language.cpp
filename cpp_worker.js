@@ -238,7 +238,7 @@ define(function(require, exports, module) {
             });
 
             return "("+params.join(", ")+")";
-        }
+        };
 
         // recursive ast parser function
         // @todo: icon for class / union / struct enum
@@ -252,6 +252,18 @@ define(function(require, exports, module) {
                     displayPos: { sl: row, sc: col, el : row, ec: col },
                     items: [],
                     name: ele.name
+                };
+
+                var pushItemIfNotExist = function(items, toPush) {
+                    var push = true;
+                    for (var i = 0, l = items.length; i < l; i++) {
+                        var item = items[i];
+                        if (item.name == toPush.name) {
+                            push = false;
+                            break;
+                        }
+                    }
+                    if (push) items.push(toPush);
                 };
 
                 // only handles icons
@@ -288,7 +300,7 @@ define(function(require, exports, module) {
                     // includes, no subs
                     case completion_type.include_t:
                         toPush.name = "&lt;"+ele.name+"&gt;";
-                        item.items.push(toPush);
+                        pushItemIfNotExist(item.items, toPush);
                         break;
 
                     // classes, subs maybe other classes, attributes or functions
@@ -297,13 +309,13 @@ define(function(require, exports, module) {
                     case completion_type.struct_t:
                     case completion_type.enum_t: {
                         parseAst(ele.children, toPush);
-                        item.items.push(toPush);
+                        pushItemIfNotExist(item.items, toPush);
                     } break;
 
                     // attributes, no subs
                     case completion_type.enum_static_t:
                     case completion_type.attribute_t:
-                        item.items.push(toPush);
+                        pushItemIfNotExist(item.items, toPush);
                         break;
 
                     // functions and methods
@@ -311,7 +323,7 @@ define(function(require, exports, module) {
                     case completion_type.method_t: {
                         toPush.name = ele.name + astParam(ele.children);
                         parseAst(ele.children, toPush);
-                        item.items.push(toPush);
+                        pushItemIfNotExist(item.items, toPush);
                     } break;
                 }
             });
