@@ -245,9 +245,11 @@ define(function(require, exports, module) {
         // @todo: take access specifier into account (green = public, blue = protected, red = private)
         var parseAst = function (ast, item) {
             _.forEach(ast, function (ele) {
+                var row = ele.loc_row - 1;
+                var col = ele.loc_col - 1;
                 var toPush = {
-                    pos: { sl: ele.loc_row - 1, sc: ele.loc_col - 1 },
-                    displayPos: { sl: ele.loc_row - 1, sc: ele.loc_col - 1 },
+                    pos: { sl: row, sc: col, el: row, ec: col },
+                    displayPos: { sl: row, sc: col, el : row, ec: col },
                     items: [],
                     name: ele.name
                 };
