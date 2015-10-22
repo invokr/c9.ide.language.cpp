@@ -179,6 +179,29 @@ define(function(require, exports, module) {
             });
         }
 
+        // Jump to definition/declaration
+        function workerJumpToDefinition(event) {
+            var path = basedir+tabManager.focussedTab.path;
+
+            if (!clang_tool)
+                return worker.emit("_jumpToDefResult", {data: {id: event.data.id, pos: {}}});
+
+            var row = event.data.pos.row+1;
+            var col = event.data.pos.column+1;
+            
+            // get definition/declaration
+            clang_tool.cursorDefinitionAt(path, row, col, function(err, res) {
+            	if (!res.file) {
+            	    // no definition found, try declaration instead
+                    clang_tool.cursorDeclarationAt(path, row, col, function(err, res) {
+                        worker.emit("_jumpToDefResult", {data: {id: event.data.id, pos: res}});
+                    });
+            	} else {
+            	    worker.emit("_jumpToDefResult", {data: {id: event.data.id, pos: res}});
+            	}
+            });
+        }
+
         // Register our language handler
         var path = options.packagePath;
         path = path.substr(0, path.lastIndexOf("/") + 1) + "cpp_worker";
@@ -208,6 +231,7 @@ define(function(require, exports, module) {
             worker.on("_completion", workerCompletion);
             worker.on("_diagnose", workerAnalysis);
             worker.on("_outline", workerOutline);
+            worker.on("_jumpToDefinition", workerJumpToDefinition);
         });
 
         // Called on c9.connect

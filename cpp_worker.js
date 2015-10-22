@@ -79,13 +79,14 @@ define(function(require, exports, module) {
             if (text.substr(0, search.length) == search)
                 return true;
 
-            for (var i = 0; i < text.length; ++i) {
-                if (idx == search.length)
-                    return true;
-
-                if (text[i] == search[idx])
-                    ++idx;
-            }
+            // disable prefix matches within the identifier
+            //for (var i = 0; i < text.length; ++i) {
+            //    if (idx == search.length)
+            //        return true;
+            //
+            //    if (text[i] == search[idx])
+            //        ++idx;
+            //}
 
             return false;
         }
@@ -107,13 +108,20 @@ define(function(require, exports, module) {
             var retConv = [];
             _.forEach(ret, function(res) {
                 var r_meta = res.args.length ? "("+res.args.join(", ")+")" : null;
-
+                var r_text = res.name;
                 var r_icon = null;
+                var r_sig = res.name;
                 var r_priority = 200 + (-res.priority);
                 switch (res.type) {
                     case completion_type.function_t:
                     case completion_type.method_t:
                         r_icon = "method";
+                        r_text += res.args.length ? "(^^)" : "()";
+                        r_sig += r_meta ? " " + r_meta : " ()";
+                        break;
+                    case completion_type.macro_t:
+                        r_text += res.args.length ? "(^^)" : "";
+                        r_sig += r_meta ? " " + r_meta : "";
                         break;
                     case completion_type.class_t:
                     case completion_type.struct_t:
@@ -130,8 +138,9 @@ define(function(require, exports, module) {
                 }
 
                 retConv.push({
-                    name: res.name, meta: r_meta, replaceText: res.name,
-                    icon: r_icon, priority: r_priority, doc: null
+                    name: res.name, meta: r_meta, replaceText: r_text,
+                    icon: r_icon, priority: r_priority, docHead: r_sig,
+                    doc: res.brief
                 });
             });
 
@@ -290,6 +299,7 @@ define(function(require, exports, module) {
                     case completion_type.enum_static_t:
                     case completion_type.attribute_t:
                         toPush.icon = "property";
+                        break;
                     default:
                         toPush.icon = "property"; // use property, in 99.9_% i'ts an enum member
                         break;
@@ -347,6 +357,29 @@ define(function(require, exports, module) {
     };
 
     cpp_worker.jumpToDefinition = function(doc, fullAst, pos, currentNode, callback) {
-        callback();
+        // create a unique numeric id to identify correct callback relationships
+        var cId = ++uId;
+
+        cpp_worker.sender.on("_jumpToDefResult", function invoTmp(ev) {
+            if (ev.data.id != cId)
+                return;
+
+            cpp_worker.sender.off("_jumpToDefResult", invoTmp);
+            var p = ev.data.pos;
+            if (!p.file)
+                return callback();
+            var data = {
+                path: p.file,
+                row: p.row - 1,
+                column: p.col - 1
+            };
+
+            return callback(data);
+        });
+
+        // send the data to the server
+        cpp_worker.sender.emit("_jumpToDefinition", {
+            id: cId, pos: pos
+        });
     };
 });

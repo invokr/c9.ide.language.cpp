@@ -133,9 +133,9 @@ module.exports = function (vfs, options, register) {
         },
 
         // Returns where the decl under the cursor has been defined
-        cursorDefitionAt: function(file, row, col, cb) {
+        cursorDefinitionAt: function(file, row, col, cb) {
             myLog("[cpp_server cursorDefinitionAt]", file, row, col);
-            cb(false, clang_obj.cursorDefitionAt(file, row, col));
+            cb(false, clang_obj.cursorDefinitionAt(file, row, col));
         },
 
         // Returns where the decl under the cursor has been declared
