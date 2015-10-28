@@ -300,7 +300,7 @@ define(function(require, exports, module) {
             // Listen to updates
             settings.on("project/c_cpp/@compilerArguments", function(value) {
                 if (clang_tool)
-                    clang_tool.setArgs(value.split("\n"));
+                    clang_tool.setArgs(value.split(/\s+/));
             }, plugin);
 
             // Add css

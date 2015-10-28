@@ -264,15 +264,21 @@ define(function(require, exports, module) {
                 };
 
                 var pushItemIfNotExist = function(items, toPush) {
-                    var push = true;
                     for (var i = 0, l = items.length; i < l; i++) {
                         var item = items[i];
-                        if (item.name == toPush.name) {
-                            push = false;
-                            break;
+                        if (item.name == toPush.name && item.icon == toPush.icon) {
+                            if (item.icon !== "c_cpp_include" && item.items.length == 0) {
+                                // prefer new item, because later definitions
+                                // are usually more relevant
+                                // eg. function def. after prototype 
+                                // or struct def. after typedef
+                                items.splice(i, 1);
+                                break;
+                            }
+                            return;
                         }
                     }
-                    if (push) items.push(toPush);
+                    items.push(toPush);
                 };
 
                 // only handles icons
@@ -381,5 +387,12 @@ define(function(require, exports, module) {
         cpp_worker.sender.emit("_jumpToDefinition", {
             id: cId, pos: pos
         });
+    };
+    
+    /*
+     * enable language features for large files
+     */
+    cpp_worker.getMaxFileSizeSupported = function() {
+        return 10 * 1000 * 1000;
     };
 });
