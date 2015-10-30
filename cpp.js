@@ -253,7 +253,7 @@ define(function(require, exports, module) {
                         return showError("[c9.ide.language.cpp] Unable to load clang_tool: " + (err.message | err));
                     }
 
-                    clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split("\n"));
+                    clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split(/\s+/));
                     emit.sticky("initServer");
                 });
             });
