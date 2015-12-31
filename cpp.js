@@ -266,7 +266,7 @@ define(function(require, exports, module) {
                         position: 1000,
                         "Compiler Arguments" : {
                            type: "textarea",
-                           width: 200,
+                           width: 400,
                            height: 130,
                            rowheight: 155,
                            path: "project/c_cpp/@compilerArguments",
@@ -279,7 +279,7 @@ define(function(require, exports, module) {
             // Set default values
             settings.on("read", function(e) {
                 settings.setDefaults("project/c_cpp", [
-                    ["compilerArguments", "-I/usr/include\n-I/usr/local/include"]
+                    ["compilerArguments", "-Wall -Wextra -std=c++11 -I/usr/include -I/usr/local/include"]
                 ]);
             }, plugin);
 
