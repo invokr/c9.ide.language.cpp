@@ -1,5 +1,6 @@
 define(function(require, exports, module) {
 
+module.exports.version = 1;
 module.exports = function(session, options){
     //session.introduction = require("text!./intro.html");
     //session.preInstallScript = require("text!./check-deps.sh");

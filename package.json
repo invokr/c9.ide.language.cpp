@@ -8,10 +8,7 @@
         "type": "git",
         "url": "http://github.com/invokr/c9.ide.language.cpp.git"
     },
-    "installer": {
-        "version": "0.14.0",
-        "main": "install.js"
-    },
+    "installer": "install.js",
     "plugins": {
         "cpp": {}
     },
