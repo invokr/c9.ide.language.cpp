@@ -270,7 +270,7 @@ define(function(require, exports, module) {
                             if (item.icon !== "c_cpp_include" && item.items.length == 0) {
                                 // prefer new item, because later definitions
                                 // are usually more relevant
-                                // eg. function def. after prototype 
+                                // eg. function def. after prototype
                                 // or struct def. after typedef
                                 items.splice(i, 1);
                                 break;
@@ -315,7 +315,7 @@ define(function(require, exports, module) {
                 switch (ele.cursor) {
                     // includes, no subs
                     case completion_type.include_t:
-                        toPush.name = "&lt;"+ele.name+"&gt;";
+                        toPush.name = "<"+ele.name+">";
                         pushItemIfNotExist(item.items, toPush);
                         break;
 
@@ -388,7 +388,7 @@ define(function(require, exports, module) {
             id: cId, pos: pos
         });
     };
-    
+
     /*
      * enable language features for large files
      */
