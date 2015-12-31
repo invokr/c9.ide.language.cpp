@@ -10,7 +10,7 @@
     },
     "installer": {
         "version": "0.14.0",
-        "main": "install.js",
+        "main": "install.js"
     },
     "plugins": {
         "cpp": {}
