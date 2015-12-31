@@ -134,12 +134,6 @@ define(function(require, exports, module) {
                     worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
                 })}
             ]);
-
-            /*clang_tool.indexTouchUnsaved(path, value, function () {
-                clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
-                    worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
-                });
-            });*/
         }
 
         // Code diagnosics
@@ -156,14 +150,6 @@ define(function(require, exports, module) {
 
                 worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
             }]);
-
-            /*clang_tool.fileDiagnose(path, function(err, res) {
-                res = _.filter(res, function(r) {
-                    return r.file == path;
-                });
-
-                worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
-            });*/
         }
 
         // AST to outline conversion
@@ -188,7 +174,7 @@ define(function(require, exports, module) {
 
             var row = event.data.pos.row+1;
             var col = event.data.pos.column+1;
-            
+
             // get definition/declaration
             clang_tool.cursorDefinitionAt(path, row, col, function(err, res) {
             	if (!res.file) {
@@ -305,6 +291,9 @@ define(function(require, exports, module) {
 
             // Add css
             ui.insertCss(require("text!./icons.css"), false, plugin);
+
+            // Initialize plugin
+            onOnline();
         });
 
         // Make sure the plugin is unloaded correctly so that cached translation units get purged
