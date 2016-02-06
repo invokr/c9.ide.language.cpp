@@ -33,6 +33,7 @@ define(function(require, exports, module) {
     // caches last results
     var last_results = null;
     var last_pos = 0;
+    var emitter = null;
 
     // returns index of last full word
     function get_last_word_start(str) {
@@ -47,6 +48,7 @@ define(function(require, exports, module) {
 
     // takes care of initial plugin registration
     cpp_worker.init = function(callback) {
+        emitter = cpp_worker.getEmitter();
         return callback();
     };
 
@@ -164,12 +166,12 @@ define(function(require, exports, module) {
         }
 
         // cb when code completion is done
-        cpp_worker.sender.on("_completionResult", function tmp(event) {
+        emitter.on("_completionResult", function tmp(event) {
             if (event.data.id != cId)
                 return;
 
             // unregister this cb
-            cpp_worker.sender.off("_completionResult", tmp);
+            emitter.off("_completionResult", tmp);
 
             last_results = event.data.results
             last_pos = pos;
@@ -179,7 +181,7 @@ define(function(require, exports, module) {
         });
 
         // send completion data to the server
-        cpp_worker.sender.emit("_completion", {
+        emitter.emit("_completion", {
             pos: pos,
             id: cId
         });
@@ -191,11 +193,12 @@ define(function(require, exports, module) {
         var cId = ++uId;
 
         // wait for the result and invoke the complete.callback function
-        cpp_worker.sender.on("_diagnoseResult", function invoTmp(ev) {
+        emitter.on("_diagnoseResult", function invoTmp(ev) {
             if (ev.data.id != cId)
                 return;
+
             // unregister this cb
-            cpp_worker.sender.off("_diagnoseResult", invoTmp);
+            emitter.off("_diagnoseResult", invoTmp);
 
             var results = []; // results to return
             _.forEach(ev.data.results, function(res) {
@@ -227,7 +230,7 @@ define(function(require, exports, module) {
         });
 
         // send the completion data to the server
-        cpp_worker.sender.emit("_diagnose", {
+        emitter.emit("_diagnose", {
             id: cId
         });
     };
@@ -345,11 +348,11 @@ define(function(require, exports, module) {
             });
         };
 
-        cpp_worker.sender.on("_outlineResult", function invoTmp(ev) {
+        emitter.on("_outlineResult", function invoTmp(ev) {
             if (ev.data.id != cId)
                 return;
 
-            cpp_worker.sender.off("_outlineResult", invoTmp);
+            emitter.off("_outlineResult", invoTmp);
             var data = {items:[]};
             parseAst(ev.data.ast, data);
 
@@ -357,7 +360,7 @@ define(function(require, exports, module) {
         });
 
         // send the data to the server
-        cpp_worker.sender.emit("_outline", {
+        emitter.emit("_outline", {
             id: cId
         });
     };
@@ -366,7 +369,7 @@ define(function(require, exports, module) {
         // create a unique numeric id to identify correct callback relationships
         var cId = ++uId;
 
-        cpp_worker.sender.on("_jumpToDefResult", function invoTmp(ev) {
+        emitter.on("_jumpToDefResult", function invoTmp(ev) {
             if (ev.data.id != cId)
                 return;
 
@@ -384,7 +387,7 @@ define(function(require, exports, module) {
         });
 
         // send the data to the server
-        cpp_worker.sender.emit("_jumpToDefinition", {
+        emitter.emit("_jumpToDefinition", {
             id: cId, pos: pos
         });
     };

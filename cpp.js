@@ -92,98 +92,98 @@ define(function(require, exports, module) {
 
         // Callback when a new document is opened
         //  - Adds new files to the index to enable faster completion
-        function onDocumentOpened(event) {
-            if (!is_c_cpp(event.data.path))
+        function onDocumentOpened(data) {
+            if (!is_c_cpp(data.path))
                 return;
 
             if (clang_tool)
-                clang_tool.indexTouch(basedir+event.data.path);
+                clang_tool.indexTouch(basedir+data.path);
         }
 
         // Callback when a document is closed
         //  - Removed translation unit from the index
-        function onDocumentClosed(event) {
-            if (!is_c_cpp(event.data.path))
+        function onDocumentClosed(data) {
+            if (!is_c_cpp(data.path))
                 return;
 
             if (clang_tool)
-                clang_tool.indexClear(basedir+event.data.path);
+                clang_tool.indexClear(basedir+data.path);
         }
 
         // Callback when a document is saved
-        function onDocumentSave(event) {
-            if (!is_c_cpp(event.path))
+        function onDocumentSave(data) {
+            if (!is_c_cpp(data.path))
                 return;
 
             // add / update on index
             if (clang_tool)
-                clang_tool.indexTouch(basedir+event.path);
+                clang_tool.indexTouch(basedir+data.path);
         }
 
         // Code completion
-        function workerCompletion(event) {
+        function workerCompletion(data) {
             var value = tabManager.focussedTab.document.value;
             var path = basedir+tabManager.focussedTab.path;
 
             if (!clang_tool)
-                return worker.emit("_completionResult", {data: {id: event.data.id, results: []}});
+                return worker.emit("_completionResult", {data: {id: data.id, results: []}});
 
             // add temporary data to index and do code completion
             callRemoteLimited("indexTouchUnsaved", [path, value, function () {
-                clang_tool.cursorCandidatesAt(path, event.data.pos.row+1, event.data.pos.column+1, function(err, res) {
-                    worker.emit("_completionResult", {data: {id: event.data.id, results: res}});
+                clang_tool.cursorCandidatesAt(path, data.pos.row+1, data.pos.column+1, function(err, res) {
+                    worker.emit("_completionResult", {data: {id: data.id, results: res}});
                 })}
             ]);
         }
 
         // Code diagnosics
-        function workerAnalysis(event) {
+        function workerAnalysis(data) {
             var path = basedir+tabManager.focussedTab.path;
 
             if (!clang_tool)
-                return worker.emit("_diagnoseResult", {data: {id: event.data.id, results: []}});
+                return worker.emit("_diagnoseResult", {data: {id: data.id, results: []}});
 
             callRemoteLimited("fileDiagnose", [path, function(err, res) {
                 res = _.filter(res, function(r) {
                     return r.file == path;
                 });
 
-                worker.emit("_diagnoseResult", {data: {id: event.data.id, results: res, path: path}});
+                worker.emit("_diagnoseResult", {data: {id: data.id, results: res, path: path}});
             }]);
         }
 
         // AST to outline conversion
-        function workerOutline(event) {
+        function workerOutline(data) {
             var path = basedir+tabManager.focussedTab.path;
 
             if (!clang_tool)
-                return worker.emit("_outlineResult", {data: {id: event.data.id, ast: []}});
+                return worker.emit("_outlineResult", {data: {id: data.id, ast: []}});
 
             // generate outline
             clang_tool.fileAst(path, function(err, res) {
-                worker.emit("_outlineResult", {data: {id: event.data.id, ast: res.children}});
+                worker.emit("_outlineResult", {data: {id: data.id, ast: res.children}});
             });
         }
 
         // Jump to definition/declaration
-        function workerJumpToDefinition(event) {
+        function workerJumpToDefinition(data) {
             var path = basedir+tabManager.focussedTab.path;
 
             if (!clang_tool)
-                return worker.emit("_jumpToDefResult", {data: {id: event.data.id, pos: {}}});
+                return worker.emit("_jumpToDefResult", {data: {id: data.id, pos: {}}});
 
-            var row = event.data.pos.row+1;
-            var col = event.data.pos.column+1;
+            var row = data.pos.row+1;
+            var col = data.pos.column+1;
 
             // get definition/declaration
             clang_tool.cursorDefinitionAt(path, row, col, function(err, res) {
             	if (!res.file) {
             	    // no definition found, try declaration instead
                     clang_tool.cursorDeclarationAt(path, row, col, function(err, res) {
-                        worker.emit("_jumpToDefResult", {data: {id: event.data.id, pos: res}});
+                        worker.emit("_jumpToDefResult", {data: {id: data.id, pos: res}});
                     });
             	} else {
-            	    worker.emit("_jumpToDefResult", {data: {id: event.data.id, pos: res}});
+            	    worker.emit("_jumpToDefResult", {data: {id: data.id, pos: res}});
             	}
             });
         }
