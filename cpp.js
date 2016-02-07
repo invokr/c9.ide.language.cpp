@@ -180,9 +180,11 @@ define(function(require, exports, module) {
             	if (!res.file) {
             	    // no definition found, try declaration instead
                     clang_tool.cursorDeclarationAt(path, row, col, function(err, res) {
+                        if (res.file) res.file = "/"+res.file;
                         worker.emit("_jumpToDefResult", {data: {id: data.id, pos: res}});
                     });
             	} else {
+                    res.file = "/"+res.file;
             	    worker.emit("_jumpToDefResult", {data: {id: data.id, pos: res}});
             	}
             });
