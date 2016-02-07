@@ -8,14 +8,12 @@ These features are currently implemented:
  * Code completion
  * Linting and Diagnostics
  * File Outline (Classes, Functions, Includes)
+ * Jump to Definition / Declaration
 
 These features are planned:
 
- * Jump to Definition / Declaration
- * Full Clang-AST to JS converter (including documentation blocks)
- * Type under cursor
  * auto / typename / decltype Type resolution under cursor
- * Better Icons
+ * better icons
 
 Code completion and linting are implemented using clang's libclang-c bindings.
 The initial parse of each translation unit (.c, .h) can take up to one second,
@@ -23,14 +21,17 @@ depending on the number and complexity of additional files to parse.
 
 Time for subsequent parses is greatly improved due to the build-in cache.
 
-![Image](https://raw.github.com/invokr/c9.ide.language.cpp/master/screenshot.png)
-
 Requirements
 ------------
 
  * libclang, libllvm
  * clang_tool (npm)
  * Linux, FreeBSD, OS X (untested but should work in theory)
+
+Run with Docker (recommended)
+-----------------------------
+
+There is a docker image available on the [hub](https://hub.docker.com/r/invokr/cloud9-cpp/).
 
 Installation on a local c9v3 instance
 -------------------------------------
@@ -47,13 +48,18 @@ Installation on a local c9v3 instance
 
 The following packages are necessary for debian jessie: `llvm-3.5`, `clang-3.5`, `libclang-3.5-dev`
 
+There seem to be a couple of version conflicts with the native clang module that I haven't quite figured out.
+The docker image uses nodejs v0.12 to build clang_tool and run c9 which seems to be working for now.
+
 Installation on c9.io
 ---------------------
+
+*Running the plugin on c9.io is broken at the moment.*
 
 Run the following in `~` (via the c9 terminal):
 
     # Install native dependencies
-    sudo apt-get install llvm-3.5 llvm-3.5-dev lvm-3.5-runtime libclang-3.5-dev libclang1-3.5 clang-format-3.5
+    sudo apt-get install llvm-3.5 llvm-3.5-dev llvm-3.5-runtime libclang-3.5-dev libclang1-3.5 clang-format-3.5
 
     # Install clang_tool
     npm install clang_tool
@@ -68,3 +74,13 @@ License
 -------
 
 c9.ide.language.cpp is licensed under the MIT
+
+Contributers
+------------
+
+Wind River ([Uwe Stieber](https://github.com/ustieber) and [aleherb](https://github.com/aleherb))
+
+Screenshot
+----------
+
+![Image](https://raw.github.com/invokr/c9.ide.language.cpp/master/screenshot.png)
