@@ -28,6 +28,7 @@ define(function(require, exports, module) {
     function main(options, imports, register) {
         // imports
         var _ = require("lodash");
+        var async = require("async");
         var language = imports.language;
         var ext = imports.ext;
         var Plugin = imports.Plugin;
@@ -40,6 +41,7 @@ define(function(require, exports, module) {
         var ui = imports.ui;
         var collab = imports.collab;
         var collabConnect = imports["collab.connect"];
+        var useCollab = collab.connected;
         var errorHandler = imports.error_handler;
         var showError = imports["dialog.error"].show;
         var installer = imports.installer;
@@ -224,27 +226,66 @@ define(function(require, exports, module) {
 
         // Called on c9.connect
         function onOnline() {
-            ext.loadRemotePlugin("clang_tool", {
-                code: require("text!./cpp_server.js"),
-                redefine: !clang_tool
-            }, function(err, plugin) {
-                if (err) {
-                    errorHandler.reportError(err);
-                    return showError("[c9.ide.language.cpp] Error initializing server: " + (err.message | err));
-                }
+            // Refresh collab state after 10 seconds
+            setTimeout(function() {
+                useCollab = collab.connected;
+            }, 10000);
 
-                // connect clang
-                clang_tool = plugin;
-                clang_tool.load(function (err) {
-                    if (err) {
-                        errorHandler.reportError(err);
-                        return showError("[c9.ide.language.cpp] Unable to load clang_tool: " + (err.message | err));
+            // Load plugin an connect collab
+            async.series([
+                function extendVFS(next) {
+                    ext.loadRemotePlugin("clang_tool", {
+                        code: require("text!./cpp_server.js"),
+                        redefine: !clang_tool
+                    }, function(err, plugin) {
+                        clang_tool = plugin;
+                        next(err);
+                    });
+                },
+                function loadClang(next) {
+                    clang_tool.load(function (err) {
+                        clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split(/\s+/));
+                        next(err);
+                    });
+                },
+                function waitForCollab(next) {
+                    if (installer.isInstalled("c9.ide.collab") && !useCollab) {
+                        setTimeout(function() {
+                            useCollab = collab.connected;
+                            next();
+                        }, 10000);
+                    } else {
+                        return next();
+                    }
+                },
+                function connectCollab(next) {
+                    if (!useCollab) {
+                        console.log("[c9.ide.langauge.cpp] Info: Not using collab");
+                        return next();
                     }
 
-                    clang_tool.setArgs(settings.get("project/c_cpp/@compilerArguments").split(/\s+/));
-                    emit.sticky("initServer");
-                });
-            });
+                    var wait = setTimeout(function() {
+                        done(new Error("Collab never gets to available state"));
+                    }, 20000);
+
+                    collabConnect.once("available", function() {
+                        console.log("[c9.ide.langauge.cpp] Info: Using collab");
+                        clearTimeout(wait);
+                        next();
+                    });
+                },
+            ], done);
+
+            function done(err) {
+                if (err) {
+                    errorHandler.reportError(err);
+                    showError("[c9.ide.language.cpp] Error initializing server: " + err.message);
+                    clang_tool = null;
+                    return false;
+                }
+
+                emit.sticky("initServer");
+            }
         }
 
         // Called on c9.disconnect
