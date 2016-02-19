@@ -26,19 +26,28 @@ module.exports = function (vfs, options, register) {
     var clang_obj = null;
     var clang_cache = {}; // caches ast and diagnosis for all files
 
+    /** Ensure we have clang_obj */
+    var ensure = function() {
+        if (!clang_obj) {
+            myLog("[cpp_server reset clang_obj]");
+            clang_obj = new clang_tool.object;
+        }
+    }
+
     register(null, {
         // Should be called when the server is first invoked, do not call multiple times
         load: function(cb) {
             myLog("[cpp_server load]");
 
             // connect clang
-            clang_obj = new clang_tool.object;
+            ensure();
             cb(false);
         },
 
         // Sets compiler arguments
         setArgs: function(args, cb) {
             myLog("[cpp_server setArgs]", args);
+            ensure();
             clang_obj.setArgs(args);
 
             if (cb)
@@ -48,6 +57,7 @@ module.exports = function (vfs, options, register) {
         // Adds / updates a file on the index
         indexTouch: function(file, cb) {
             myLog("[cpp_server indexTouch]", file);
+            ensure();
             clang_obj.indexTouch(file);
 
             // cache diagnosis and ast for the file in the cache
@@ -63,6 +73,7 @@ module.exports = function (vfs, options, register) {
         // Add unsaved contents to index
         indexTouchUnsaved: function(file, content, cb) {
             myLog("[cpp_server indexTouchUnsaved]", file);
+            ensure();
             clang_obj.indexTouchUnsaved(file, content);
 
             if (cb)
@@ -72,11 +83,13 @@ module.exports = function (vfs, options, register) {
         // Returns memory usage for each file on the index
         indexStatus: function(cb) {
             myLog("[cpp_server indexStatus]", clang_obj);
+            ensure();
             cb(false, clang_obj.indexStatus());
         },
 
         // Clears the index [for a specifc file]
         indexClear: function(file, cb) {
+            ensure();
             if (typeof(file) != "undefined") {
                 myLog("[cpp_server indexClear]", file);
                 clang_obj.indexClear(file);
@@ -96,12 +109,14 @@ module.exports = function (vfs, options, register) {
         // Generates file outline
         fileOutline: function(file, cb) {
             myLog("[cpp_server fileOutline]", file);
+            ensure();
             cb(false, clang_obj.fileOutline(file));
         },
 
         // Returns diagnostic information
         fileDiagnose: function(file, cb) {
             myLog("[cpp_server fileDiagnose]", file);
+            ensure();
 
             if (typeof(clang_cache[file]) != "undefined")
                 cb(false, clang_cache[file].diag);
@@ -112,6 +127,7 @@ module.exports = function (vfs, options, register) {
         // Returns ast
         fileAst: function(file, cb) {
             myLog("[cpp_server fileAst]", file);
+            ensure();
 
             if (typeof(clang_cache[file]) != "undefined")
                 cb(false, clang_cache[file].ast);
@@ -122,24 +138,28 @@ module.exports = function (vfs, options, register) {
         // Returns potential code completion candidates at a specific location
         cursorCandidatesAt: function(file, row, col, cb) {
             myLog("[cpp_server cursorCandidatesAt]", file, row, col);
+            ensure();
             cb(false, clang_obj.cursorCandidatesAt(file, row, col));
         },
 
         // Returns type under cursor
         cursorTypeAt: function(file, row, col, cb) {
             myLog("[cpp_server cursorTypeAt]", file, row, col);
+            ensure();
             cb(false, clang_obj.cursorTypeAt(file, row, col));
         },
 
         // Returns where the decl under the cursor has been defined
         cursorDefinitionAt: function(file, row, col, cb) {
             myLog("[cpp_server cursorDefinitionAt]", file, row, col);
+            ensure();
             cb(false, clang_obj.cursorDefinitionAt(file, row, col));
         },
 
         // Returns where the decl under the cursor has been declared
         cursorDeclarationAt: function(file, row, col, cb) {
             myLog("[cpp_server cursorDeclarationAt]", file, row, col);
+            ensure();
             cb(false, clang_obj.cursorDeclarationAt(file, row, col));
         },
 
