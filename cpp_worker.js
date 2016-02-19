@@ -81,14 +81,14 @@ define(function(require, exports, module) {
             if (text.substr(0, search.length) == search)
                 return true;
 
-            // disable prefix matches within the identifier
-            //for (var i = 0; i < text.length; ++i) {
-            //    if (idx == search.length)
-            //        return true;
-            //
-            //    if (text[i] == search[idx])
-            //        ++idx;
-            //}
+            // prefix matches within the identifier
+            for (var i = 0; i < text.length; ++i) {
+                if (idx == search.length)
+                    return true;
+
+                if (text[i] == search[idx])
+                    ++idx;
+            }
 
             return false;
         }
