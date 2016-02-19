@@ -8,7 +8,11 @@
 // Server side version of our code completion module
 module.exports = function (vfs, options, register) {
     var clang_tool = require("clang_tool");
+    var clang_obj = null;
+    var clang_cache = {};
+    var collabServer = null;
 
+    // Debugging
     var debug = true;
     var myLog = function(msg) {
         var toLog = "";
@@ -23,16 +27,57 @@ module.exports = function (vfs, options, register) {
             console.log(toLog);
     };
 
-    var clang_obj = null;
-    var clang_cache = {}; // caches ast and diagnosis for all files
+    // Collab
+    vfs.use("collab", {}, function(err, collab) {
+        if (err) {
+            myLog("[cpp_server collab] Unavailable");
+            collabServer = null;
+            return null;
+        }
+
+        myLog("[cpp_server collab] Connected");
+        collabServer = collab.api;
+    });
 
     /** Ensure we have clang_obj */
     var ensure = function() {
         if (!clang_obj) {
-            myLog("[cpp_server reset clang_obj]");
+            myLog("[cpp_server ensure]");
             clang_obj = new clang_tool.object;
         }
-    }
+    };
+
+    /** Return document contents from collab server */
+    var getCollabDoc = function(path, rev, cb) {
+        if (!collabServer)
+            return cb("No collab server found and cannot use local value");
+
+        // Make sure we get our document
+        var timeout = setTimeout(function() {
+            cb("Unable to get document from collab: Timeout.");
+        }, 15000);
+
+        var docId = path.replace(/^\//, "");
+        collabServer.getDocument(docId, function (err, data) {
+            clearTimeout(timeout);
+
+            // Collabg error
+            if (err) return cb(err);
+            if (!data || !data.contents) return cb("Unable to get document from collab: Unkown.");
+
+            // We got our version
+            if (rev <= data.dataValues.revNum) return cb(false, data.dataValues.contents);
+
+            // We need to wait for it to be saved
+            collabServer.emitter.on("afterEditUpdate", function wait(e) {
+                if (e.docId !== docId || e.doc.revNum < rev)
+                    return;
+
+                collabServer.emitter.removeListener("afterEditUpdate", wait);
+                cb(null, e.doc.contents);
+            });
+        });
+    };
 
     register(null, {
         // Should be called when the server is first invoked, do not call multiple times
@@ -78,6 +123,23 @@ module.exports = function (vfs, options, register) {
 
             if (cb)
                 cb(false);
+        },
+
+        // Add unsaved contents to index using collab
+        indexTouchUnsavedCollab: function(file, file_collab, rev, cb) {
+            myLog("[cpp_server indexTouchUnsavedCollab]", file, file_collab, rev);
+            ensure();
+
+            // get data from collab
+            getCollabDoc(file_collab, rev, function(err, data) {
+                if (err) {
+                    myLog("[cpp_server indexTouchUnsavedCollab]", err);
+                    return cb(err);
+                }
+
+                clang_obj.indexTouchUnsaved(file, data);
+                if (cb) cb(false);
+            });
         },
 
         // Returns memory usage for each file on the index
