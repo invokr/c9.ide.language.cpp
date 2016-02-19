@@ -98,13 +98,14 @@ define(function(require, exports, module) {
             // match each results name to the subsequence
             var ret = [];
 
-            if (txt.length)
+            if (txt.length) {
                 _.forEach(results, function(res) {
                     if (filter_match(txt, res.name))
                         ret.push(res);
                 });
-            else
+            } else {
                 ret = results;
+            }
 
             // transform to c9 format
             var retConv = [];
@@ -310,7 +311,7 @@ define(function(require, exports, module) {
                         toPush.icon = "property";
                         break;
                     default:
-                        toPush.icon = "property"; // use property, in 99.9_% i'ts an enum member
+                        toPush.icon = "property"; // use property, 99.9_% i'ts an enum member
                         break;
                 }
 
