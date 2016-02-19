@@ -9,8 +9,7 @@
 module.exports = function (vfs, options, register) {
     var clang_tool = require("clang_tool");
 
-    // Set this to true during development
-    var debug = false;
+    var debug = true;
     var myLog = function(msg) {
         var toLog = "";
         for (var i = 0; i < arguments.length; ++i) {
