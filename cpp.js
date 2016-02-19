@@ -60,6 +60,26 @@ define(function(require, exports, module) {
         // make sure all deps are installed
         installer.createSession("c9.ide.language.cpp", require("./install"));
 
+        // Make sure file contents stay in sync with the server
+        function syncChanges(cb) {
+            var value = tabManager.focussedTab.document.value;
+            var path = tabManager.focussedTab.path;
+
+            if (useCollab) {
+                var revNum = -1;
+                var collabDoc = collab.getDocument(path);
+
+                if (collabDoc) {
+                    revNum = collabDoc.latestRevNum + (collabDoc.pendingUpdates ? 1 : 0);
+                    collabDoc.sendNow();
+                }
+
+                callRemoteLimited("indexTouchUnsavedCollab", [basedir+path, path, revNum, cb]);
+            } else {
+                callRemoteLimited("indexTouchUnsaved", [basedir+path, value, cb]);
+            }
+        }
+
         // Calls a clang_remote function, uses rate limitting
         function callRemoteLimited(fcn, params) {
             var tries = 0;
@@ -124,18 +144,17 @@ define(function(require, exports, module) {
 
         // Code completion
         function workerCompletion(data) {
-            var value = tabManager.focussedTab.document.value;
             var path = basedir+tabManager.focussedTab.path;
 
             if (!clang_tool)
                 return worker.emit("_completionResult", {data: {id: data.id, results: []}});
 
             // add temporary data to index and do code completion
-            callRemoteLimited("indexTouchUnsaved", [path, value, function () {
+            syncChanges(function () {
                 clang_tool.cursorCandidatesAt(path, data.pos.row+1, data.pos.column+1, function(err, res) {
                     worker.emit("_completionResult", {data: {id: data.id, results: res}});
-                })}
-            ]);
+                })
+            });
         }
 
         // Code diagnosics
