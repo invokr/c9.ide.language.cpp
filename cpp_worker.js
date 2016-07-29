@@ -110,7 +110,7 @@ define(function(require, exports, module) {
             // transform to c9 format
             var retConv = [];
             _.forEach(ret, function(res) {
-                var r_meta = res.args.length ? "("+res.args.join(", ")+")" : null;
+                var r_meta = res.info.length ? "("+res.info.join(", ")+")" : null;
                 var r_text = res.name;
                 var r_icon = null;
                 var r_sig = res.name;
@@ -119,11 +119,11 @@ define(function(require, exports, module) {
                     case completion_type.function_t:
                     case completion_type.method_t:
                         r_icon = "method";
-                        r_text += res.args.length ? "(^^)" : "()";
+                        r_text += res.info.length ? "(^^)" : "()";
                         r_sig += r_meta ? " " + r_meta : " ()";
                         break;
                     case completion_type.macro_t:
-                        r_text += res.args.length ? "(^^)" : "";
+                        r_text += res.info.length ? "(^^)" : "";
                         r_sig += r_meta ? " " + r_meta : "";
                         break;
                     case completion_type.class_t:
